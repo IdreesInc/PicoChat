@@ -1,28 +1,63 @@
 //
 //  MessagesViewController.swift
-//  PicoChat MessagesExtension
+//  imessage-sandbox MessagesExtension
 //
 //  Created by Idrees Hassan on 1/13/25.
 //
 
 import UIKit
 import Messages
+import SwiftUI
 
+@objc(MessagesViewController)
 class MessagesViewController: MSMessagesAppViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        // Do any additional setup after loading the view.
+        
+//        // Check if there's an active conversation
+//        guard let conversation = activeConversation else {
+//            print("No active conversation available")
+//            return
+//        }
+//
+//        // Create the SwiftUI view and pass the active conversation
+//        let child = UIHostingController(rootView: SwiftUIView(conversation: conversation))
+//
+//        // Add the hosting controller's view to the current view hierarchy
+//        self.view.addSubview(child.view)
+//
+//        // Enable Auto Layout for the hosting controller's view
+//        child.view.translatesAutoresizingMaskIntoConstraints = false
+//
+//        // Set up constraints to make the SwiftUI view fill the entire screen
+//        NSLayoutConstraint.activate([
+//            child.view.topAnchor.constraint(equalTo: view.topAnchor),
+//            child.view.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+//            child.view.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+//            child.view.trailingAnchor.constraint(equalTo: view.trailingAnchor)
+//        ])
     }
     
     // MARK: - Conversation Handling
     
     override func willBecomeActive(with conversation: MSConversation) {
-        // Called when the extension is about to move from the inactive to active state.
-        // This will happen when the extension is about to present UI.
+        super.willBecomeActive(with: conversation)
         
-        // Use this method to configure the extension and restore previously stored state.
+        // The conversation is guaranteed to be active here
+        let child = UIHostingController(rootView: SwiftUIView(conversation: conversation))
+
+        // Add the hosting controller's view
+        self.view.addSubview(child.view)
+        child.view.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            child.view.topAnchor.constraint(equalTo: view.topAnchor),
+            child.view.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            child.view.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            child.view.trailingAnchor.constraint(equalTo: view.trailingAnchor)
+        ])
     }
+
     
     override func didResignActive(with conversation: MSConversation) {
         // Called when the extension is about to move from the active to inactive state.
