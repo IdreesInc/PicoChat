@@ -11,6 +11,9 @@ import Messages
 
 struct SwiftUIView: View {
     
+    // 2D array of numbers, 85 rows by 234 columns
+    @State private var grid: [[Int]] = Array(repeating: Array(repeating: 0, count: 234), count: 85)
+    @State private var lastTouchLocation: CGPoint? = nil
     let conversation: MSConversation
     
     var body: some View {
@@ -18,10 +21,56 @@ struct SwiftUIView: View {
             Text("Hello, iMessage!")
                 .font(.largeTitle)
                 .padding()
+            Canvas(
+                opaque: true,
+                colorMode: .linear,
+                rendersAsynchronously: false
+            ) { context, size in
+                // Fill the canvas with a white background
+                context.fill(Path(CGRect(origin: .zero, size: size)), with: .color(Color(.sRGB, red: 230/255, green: 240/255, blue: 1, opacity: 1.0)))
+                // Draw each pixel
+                for y in 0..<grid.count {
+                    for x in 0..<grid[y].count {
+                        if grid[y][x] == 1 {
+                            context.fill(Path(CGRect(x: x, y: y, width: 1, height: 1)), with: .color(.black))
+                        }
+                    }
+                }
+            }
+            .frame(width: 234, height: 85)
+            .gesture(
+                DragGesture(minimumDistance: 0, coordinateSpace: .local)
+                    .onChanged({ value in
+                        // Print the location of the drag gesture
+                        print("Drag location: \(value.location)")
+                        if value.location.x >= 0 && value.location.x < 234 && value.location.y >= 0 && value.location.y < 85 {
+                            grid[Int(value.location.y)][Int(value.location.x)] = 1
+                        }
+                        if (lastTouchLocation != nil) {
+                            // Draw a line between the last touch location and the current touch location
+                            let from = lastTouchLocation!
+                            let to = value.location
+                            let dx = to.x - from.x
+                            let dy = to.y - from.y
+                            let steps = max(abs(dx), abs(dy))
+                            for i in 0..<Int(steps) {
+                                let x = from.x + CGFloat(i) / CGFloat(steps) * dx
+                                let y = from.y + CGFloat(i) / CGFloat(steps) * dy
+                                if x >= 0 && x < 234 && y >= 0 && y < 85 {
+                                    grid[Int(y)][Int(x)] = 1
+                                }
+                            }
+                        }
+                        lastTouchLocation = value.location
+                    })
+                    .onEnded({ value in
+                        lastTouchLocation = nil
+                    })
+            )
+            
             Button("Tap me!") {
                 print("Button tapped!")
                 createDynamicSticker(text: "hiya", size: CGSize(width: 1618, height: 618)) { url in
-                    let sticker = createSticker(fileURL: url!, localizedDescription: "Dynamic sticker")
                     conversation.insertAttachment(url!, withAlternateFilename: "Image.png") { error in
                         if let error = error {
                             print("Failed to insert sticker: \(error.localizedDescription)")
@@ -29,23 +78,6 @@ struct SwiftUIView: View {
                             print("Sticker inserted successfully")
                         }
                     }
-                    
-//                    // Configure the layout for the message
-//                    let layout = MSMessageTemplateLayout()
-//                    layout.caption = ""
-//                    layout.subcaption = ""
-//                    layout.image = UIImage(systemName: "message.fill") // Replace with your custom image if needed
-//
-//                    // Create the message with the layout
-//                    let message = MSMessage()
-//                    message.layout = layout
-//                    message.url = URL(string: "https://example.com") // Optional: Include a URL with the message
-//
-//                    conversation.insert(message) { error in
-//                        if let error = error {
-//                            print("Failed to insert message: \(error.localizedDescription)")
-//                        }
-//                    }
                 }
             }
             .padding()
