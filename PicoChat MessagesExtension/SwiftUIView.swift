@@ -16,13 +16,12 @@ let dark_color = Color(hex: "0b155b")
 let fill_color = Color(hex: "b7baef")
 
 struct SwiftUIView: View {
-    
     @State private var grid: [[Int]] = Array(repeating: Array(repeating: 0, count: CANVAS_WIDTH), count: CANVAS_HEIGHT)
     @State private var lastTouchLocation: CGPoint? = nil
     let conversation: MSConversation
     
-    var canvas: some View {
-        return Canvas(
+    private func createCanvas(interactive: Bool) -> some View {
+        Canvas(
             opaque: true,
             colorMode: .linear,
             rendersAsynchronously: false
@@ -39,38 +38,44 @@ struct SwiftUIView: View {
             }
         }
         .frame(width: CGFloat(CANVAS_WIDTH), height: CGFloat(CANVAS_HEIGHT))
-        .gesture(
-            DragGesture(minimumDistance: 0, coordinateSpace: .local)
-                .onChanged({ value in
-                    // Print the location of the drag gesture
-                    print("Drag location: \(value.location)")
-                    if value.location.x >= 0 && value.location.x < CGFloat(CANVAS_WIDTH) && value.location.y >= 0 && value.location.y < CGFloat(CANVAS_HEIGHT) {
-                        grid[Int(value.location.y)][Int(value.location.x)] = 1
-                    }
-                    if (lastTouchLocation != nil) {
-                        // Draw a line between the last touch location and the current touch location
-                        let from = lastTouchLocation!
-                        let to = value.location
-                        let dx = to.x - from.x
-                        let dy = to.y - from.y
-                        let steps = max(abs(dx), abs(dy))
-                        for i in 0..<Int(steps) {
-                            let x = from.x + CGFloat(i) / CGFloat(steps) * dx
-                            let y = from.y + CGFloat(i) / CGFloat(steps) * dy
-                            if x >= 0 && x < CGFloat(CANVAS_WIDTH) && y >= 0 && y < CGFloat(CANVAS_HEIGHT) {
-                                grid[Int(y)][Int(x)] = 1
-                            }
-                        }
-                    }
-                    lastTouchLocation = value.location
-                })
-                .onEnded({ value in
-                    lastTouchLocation = nil
-                })
-        )
         .cornerRadiusWithBorder(radius: 5, borderLineWidth: 1, borderColor: dark_color)
-        .scaleEffect(CGFloat(SCALE))
-        .padding(.bottom, (Double(CANVAS_HEIGHT) * SCALE - Double(CANVAS_HEIGHT)) / 2)
+        .applyIf(interactive) { view in
+            view.gesture(
+                DragGesture(minimumDistance: 0, coordinateSpace: .local)
+                    .onChanged { value in
+                        handleDragGesture(value: value)
+                    }
+                    .onEnded { _ in
+                        lastTouchLocation = nil
+                    }
+            )
+            .padding(.bottom, (Double(CANVAS_HEIGHT) * SCALE - Double(CANVAS_HEIGHT)) / 2)
+            .scaleEffect(CGFloat(SCALE))
+        }
+        .applyIf(!interactive) { view in
+            view.padding(30)
+        }
+    }
+    
+    private func handleDragGesture(value: DragGesture.Value) {
+        if value.location.x >= 0 && value.location.x < CGFloat(CANVAS_WIDTH) && value.location.y >= 0 && value.location.y < CGFloat(CANVAS_HEIGHT) {
+            grid[Int(value.location.y)][Int(value.location.x)] = 1
+        }
+        if let lastTouch = lastTouchLocation {
+            let from = lastTouch
+            let to = value.location
+            let dx = to.x - from.x
+            let dy = to.y - from.y
+            let steps = max(abs(dx), abs(dy))
+            for i in 0..<Int(steps) {
+                let x = from.x + CGFloat(i) / CGFloat(steps) * dx
+                let y = from.y + CGFloat(i) / CGFloat(steps) * dy
+                if x >= 0 && x < CGFloat(CANVAS_WIDTH) && y >= 0 && y < CGFloat(CANVAS_HEIGHT) {
+                    grid[Int(y)][Int(x)] = 1
+                }
+            }
+        }
+        lastTouchLocation = value.location
     }
     
     var body: some View {
@@ -78,11 +83,13 @@ struct SwiftUIView: View {
             Text("Hello, iMessage!")
                 .font(.largeTitle)
                 .padding()
-            canvas
+            
+            // Interactive canvas
+            createCanvas(interactive: true)
             
             Button("Tap me!") {
                 print("Button tapped!")
-                let renderer = ImageRenderer(content: canvas)
+                let renderer = ImageRenderer(content: createCanvas(interactive: false))
                 if let image = renderer.uiImage {
                     let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString).appendingPathExtension("png")
                     if let data = image.pngData() {
@@ -102,6 +109,14 @@ struct SwiftUIView: View {
         }
     }
 }
+
+extension View {
+    // Helper modifier to conditionally apply a view modifier
+    func applyIf<Content: View>(_ condition: Bool, transform: (Self) -> Content) -> some View {
+        condition ? AnyView(transform(self)) : AnyView(self)
+    }
+}
+
 
 func createSticker(fileURL: URL, localizedDescription: String) -> MSSticker? {
     do {
@@ -150,6 +165,12 @@ func createDynamicSticker(text: String, size: CGSize, completion: @escaping (URL
     UIGraphicsEndImageContext()
 }
 
+extension View {
+    func cornerRadiusWithBorder(radius: CGFloat, borderLineWidth: CGFloat = 1, borderColor: Color = .gray, antialiased: Bool = true) -> some View {
+        modifier(ModifierCornerRadiusWithBorder(radius: radius, borderLineWidth: borderLineWidth, borderColor: borderColor, antialiased: antialiased))
+    }
+}
+
 fileprivate struct ModifierCornerRadiusWithBorder: ViewModifier {
     var radius: CGFloat
     var borderLineWidth: CGFloat = 1
@@ -167,26 +188,19 @@ fileprivate struct ModifierCornerRadiusWithBorder: ViewModifier {
                     UnevenRoundedRectangle(cornerRadii: .init(
                         topLeading: self.radius,
                         bottomTrailing: self.radius), style: .continuous)
-                        .inset(by: self.borderLineWidth)
-                        .frame(width: 59, height: 18)
-                        .foregroundStyle(fill_color)
+                    .inset(by: self.borderLineWidth)
+                    .frame(width: 59, height: 18)
+                    .foregroundStyle(fill_color)
                     UnevenRoundedRectangle(cornerRadii: .init(
                         topLeading: self.radius,
                         bottomTrailing: self.radius), style: .continuous)
-                        .inset(by: self.borderLineWidth)
-                        .strokeBorder(self.borderColor, lineWidth: self.borderLineWidth, antialiased: self.antialiased)
-                        .frame(width: 59, height: 18)
+                    .inset(by: self.borderLineWidth)
+                    .strokeBorder(self.borderColor, lineWidth: self.borderLineWidth, antialiased: self.antialiased)
+                    .frame(width: 59, height: 18)
                 }
             )
     }
 }
-
-extension View {
-    func cornerRadiusWithBorder(radius: CGFloat, borderLineWidth: CGFloat = 1, borderColor: Color = .gray, antialiased: Bool = true) -> some View {
-        modifier(ModifierCornerRadiusWithBorder(radius: radius, borderLineWidth: borderLineWidth, borderColor: borderColor, antialiased: antialiased))
-    }
-}
-
 
 extension Color {
     init(hex: String) {
@@ -204,7 +218,7 @@ extension Color {
         default:
             (a, r, g, b) = (1, 1, 1, 0)
         }
-
+        
         self.init(
             .sRGB,
             red: Double(r) / 255,
