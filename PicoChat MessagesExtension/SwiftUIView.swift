@@ -12,6 +12,8 @@ import Messages
 let SCALE = 1.5
 let CANVAS_WIDTH = 234
 let CANVAS_HEIGHT = 85
+let dark_color = Color(hex: "0b155b")
+let fill_color = Color(hex: "b7baef")
 
 struct SwiftUIView: View {
     
@@ -26,7 +28,7 @@ struct SwiftUIView: View {
             rendersAsynchronously: false
         ) { context, size in
             // Fill the canvas with a white background
-            context.fill(Path(CGRect(origin: .zero, size: size)), with: .color(Color(.sRGB, red: 230/255, green: 240/255, blue: 1, opacity: 1.0)))
+            context.fill(Path(CGRect(origin: .zero, size: size)), with: .color(.white))
             // Draw each pixel
             for y in 0..<grid.count {
                 for x in 0..<grid[y].count {
@@ -66,6 +68,7 @@ struct SwiftUIView: View {
                     lastTouchLocation = nil
                 })
         )
+        .cornerRadiusWithBorder(radius: 5, borderLineWidth: 1, borderColor: dark_color)
         .scaleEffect(CGFloat(SCALE))
         .padding(.bottom, (Double(CANVAS_HEIGHT) * SCALE - Double(CANVAS_HEIGHT)) / 2)
     }
@@ -91,15 +94,6 @@ struct SwiftUIView: View {
                         }
                     }
                 }
-//                createDynamicSticker(text: "hiya", size: CGSize(width: 1618, height: 618)) { url in
-//                    conversation.insertAttachment(url!, withAlternateFilename: "Image.png") { error in
-//                        if let error = error {
-//                            print("Failed to insert sticker: \(error.localizedDescription)")
-//                        } else {
-//                            print("Sticker inserted successfully")
-//                        }
-//                    }
-//                }
             }
             .padding()
             .background(Color.blue)
@@ -156,3 +150,67 @@ func createDynamicSticker(text: String, size: CGSize, completion: @escaping (URL
     UIGraphicsEndImageContext()
 }
 
+fileprivate struct ModifierCornerRadiusWithBorder: ViewModifier {
+    var radius: CGFloat
+    var borderLineWidth: CGFloat = 1
+    var borderColor: Color = .gray
+    var antialiased: Bool = true
+    
+    func body(content: Content) -> some View {
+        content
+            .cornerRadius(self.radius, antialiased: self.antialiased)
+            .overlay(
+                ZStack(alignment: .topLeading) {
+                    RoundedRectangle(cornerRadius: self.radius)
+                        .inset(by: self.borderLineWidth)
+                        .strokeBorder(self.borderColor, lineWidth: self.borderLineWidth, antialiased: self.antialiased)
+                    UnevenRoundedRectangle(cornerRadii: .init(
+                        topLeading: self.radius,
+                        bottomTrailing: self.radius), style: .continuous)
+                        .inset(by: self.borderLineWidth)
+                        .frame(width: 59, height: 18)
+                        .foregroundStyle(fill_color)
+                    UnevenRoundedRectangle(cornerRadii: .init(
+                        topLeading: self.radius,
+                        bottomTrailing: self.radius), style: .continuous)
+                        .inset(by: self.borderLineWidth)
+                        .strokeBorder(self.borderColor, lineWidth: self.borderLineWidth, antialiased: self.antialiased)
+                        .frame(width: 59, height: 18)
+                }
+            )
+    }
+}
+
+extension View {
+    func cornerRadiusWithBorder(radius: CGFloat, borderLineWidth: CGFloat = 1, borderColor: Color = .gray, antialiased: Bool = true) -> some View {
+        modifier(ModifierCornerRadiusWithBorder(radius: radius, borderLineWidth: borderLineWidth, borderColor: borderColor, antialiased: antialiased))
+    }
+}
+
+
+extension Color {
+    init(hex: String) {
+        let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
+        var int: UInt64 = 0
+        Scanner(string: hex).scanHexInt64(&int)
+        let a, r, g, b: UInt64
+        switch hex.count {
+        case 3: // RGB (12-bit)
+            (a, r, g, b) = (255, (int >> 8) * 17, (int >> 4 & 0xF) * 17, (int & 0xF) * 17)
+        case 6: // RGB (24-bit)
+            (a, r, g, b) = (255, int >> 16, int >> 8 & 0xFF, int & 0xFF)
+        case 8: // ARGB (32-bit)
+            (a, r, g, b) = (int >> 24, int >> 16 & 0xFF, int >> 8 & 0xFF, int & 0xFF)
+        default:
+            (a, r, g, b) = (1, 1, 1, 0)
+        }
+
+        self.init(
+            .sRGB,
+            red: Double(r) / 255,
+            green: Double(g) / 255,
+            blue:  Double(b) / 255,
+            opacity: Double(a) / 255
+        )
+    }
+}
