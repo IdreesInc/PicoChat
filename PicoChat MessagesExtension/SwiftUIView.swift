@@ -43,10 +43,54 @@ struct SwiftUIView: View {
             view.gesture(
                 DragGesture(minimumDistance: 0, coordinateSpace: .local)
                     .onChanged { value in
-                        handleDragGesture(value: value)
+                        if value.location.x >= 0 && value.location.x < CGFloat(CANVAS_WIDTH) && value.location.y >= 0 && value.location.y < CGFloat(CANVAS_HEIGHT) {
+                            grid[Int(value.location.y)][Int(value.location.x)] = 1
+                        }
+                        if let lastTouch = lastTouchLocation {
+                            // Bresenham's Line Algorithm
+                            let from = lastTouch
+                            let to = value.location
+
+                            let x0 = Int(from.x)
+                            let y0 = Int(from.y)
+                            let x1 = Int(to.x)
+                            let y1 = Int(to.y)
+                            
+                            let dx = abs(x1 - x0)
+                            let dy = abs(y1 - y0)
+                            
+                            let sx = x0 < x1 ? 1 : -1
+                            let sy = y0 < y1 ? 1 : -1
+                            
+                            var err = dx - dy
+                            
+                            var x = x0
+                            var y = y0
+                            
+                            while true {
+                                if x >= 0 && x < CANVAS_WIDTH && y >= 0 && y < CANVAS_HEIGHT {
+                                    grid[y][x] = 1
+                                }
+                                if x == x1 && y == y1 {
+                                    break
+                                }
+                                let e2 = 2 * err
+                                if e2 > -dy {
+                                    err -= dy
+                                    x += sx
+                                }
+                                if e2 < dx {
+                                    err += dx
+                                    y += sy
+                                }
+                            }
+                        }
+
+                        lastTouchLocation = value.location
                     }
                     .onEnded { _ in
                         lastTouchLocation = nil
+                        print("Touch ended")
                     }
             )
             .padding(.bottom, (Double(CANVAS_HEIGHT) * SCALE - Double(CANVAS_HEIGHT)) / 2)
@@ -55,27 +99,6 @@ struct SwiftUIView: View {
         .applyIf(!interactive) { view in
             view.padding(30)
         }
-    }
-    
-    private func handleDragGesture(value: DragGesture.Value) {
-        if value.location.x >= 0 && value.location.x < CGFloat(CANVAS_WIDTH) && value.location.y >= 0 && value.location.y < CGFloat(CANVAS_HEIGHT) {
-            grid[Int(value.location.y)][Int(value.location.x)] = 1
-        }
-        if let lastTouch = lastTouchLocation {
-            let from = lastTouch
-            let to = value.location
-            let dx = to.x - from.x
-            let dy = to.y - from.y
-            let steps = max(abs(dx), abs(dy))
-            for i in 0..<Int(steps) {
-                let x = from.x + CGFloat(i) / CGFloat(steps) * dx
-                let y = from.y + CGFloat(i) / CGFloat(steps) * dy
-                if x >= 0 && x < CGFloat(CANVAS_WIDTH) && y >= 0 && y < CGFloat(CANVAS_HEIGHT) {
-                    grid[Int(y)][Int(x)] = 1
-                }
-            }
-        }
-        lastTouchLocation = value.location
     }
     
     var body: some View {
