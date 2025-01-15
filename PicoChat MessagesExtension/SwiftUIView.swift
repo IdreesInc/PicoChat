@@ -12,13 +12,75 @@ import Messages
 let SCALE = 1.5
 let CANVAS_WIDTH = 234
 let CANVAS_HEIGHT = 85
+let PIXEL_SIZE = SCALE
+
 let dark_color = Color(hex: "0b155b")
 let fill_color = Color(hex: "b7baef")
+let background_color = Color(hex: "fcfcfc")
+let modal_background_color = Color(hex: "b3b3b3")
+let dark_border_color = Color(hex: "666667")
+
+let vertical_padding = (Double(CANVAS_HEIGHT) * SCALE - Double(CANVAS_HEIGHT)) / 2
+let horizontal_padding = (Double(CANVAS_WIDTH) * SCALE - Double(CANVAS_WIDTH)) / 2
 
 struct SwiftUIView: View {
     @State private var grid: [[Int]] = Array(repeating: Array(repeating: 0, count: CANVAS_WIDTH), count: CANVAS_HEIGHT)
     @State private var lastTouchLocation: CGPoint? = nil
     let conversation: MSConversation
+    
+    var body: some View {
+        // Whole view
+        HStack {
+            // Canvas and Keyboard Modal
+            let modalPadding: CGFloat = 7
+            VStack {
+                // Canvas
+                VStack {
+                    // Button for testing
+                    if false {
+                        Button("Tap me!") {
+                            print("Button tapped!")
+                            let renderer = ImageRenderer(content: createCanvas(interactive: false))
+                            if let image = renderer.uiImage {
+                                let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString).appendingPathExtension("png")
+                                if let data = image.pngData() {
+                                    try? data.write(to: url)
+                                }
+                                conversation.insertAttachment(url, withAlternateFilename: "Image.png") { error in
+                                    if let error = error {
+                                        print("Failed to insert image: \(error.localizedDescription)")
+                                    }
+                                }
+                            }
+                        }
+                        .padding()
+                        .background(Color.blue)
+                        .foregroundColor(.white)
+                        .cornerRadius(10)
+                    }
+                    
+                    // Interactive canvas
+                    createCanvas(interactive: true)
+                }
+                .padding(.top, modalPadding)
+                .padding(.leading, modalPadding)
+                .padding(.trailing, modalPadding)
+                
+                // Keyboard and controls
+                HStack {
+                    RoundedRectangle(cornerRadius: 0)
+                        .fill(background_color)
+                        .frame(width: CGFloat(Double(CANVAS_WIDTH) * SCALE), height: CGFloat(Double(CANVAS_HEIGHT) * SCALE))
+                        .roundedBorder(radius: 5 * PIXEL_SIZE, borderLineWidth: PIXEL_SIZE, borderColor: dark_border_color)
+                }
+                .padding(.bottom, modalPadding)
+            }
+            .background(modal_background_color)
+            .roundedBorder(radius: 12, borderLineWidth: PIXEL_SIZE, borderColor: dark_border_color)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(background_color)
+    }
     
     private func createCanvas(interactive: Bool) -> some View {
         Canvas(
@@ -27,7 +89,7 @@ struct SwiftUIView: View {
             rendersAsynchronously: false
         ) { context, size in
             // Fill the canvas with a white background
-            context.fill(Path(CGRect(origin: .zero, size: size)), with: .color(.white))
+            context.fill(Path(CGRect(origin: .zero, size: size)), with: .color(background_color))
             // Draw each pixel
             for y in 0..<grid.count {
                 for x in 0..<grid[y].count {
@@ -38,7 +100,7 @@ struct SwiftUIView: View {
             }
         }
         .frame(width: CGFloat(CANVAS_WIDTH), height: CGFloat(CANVAS_HEIGHT))
-        .cornerRadiusWithBorder(radius: 5, borderLineWidth: 1, borderColor: dark_color)
+        .roundedBorder(radius: 5, borderLineWidth: 1, borderColor: dark_color, inset: 1, name: true)
         .applyIf(interactive) { view in
             view.gesture(
                 DragGesture(minimumDistance: 0, coordinateSpace: .local)
@@ -93,45 +155,19 @@ struct SwiftUIView: View {
                         print("Touch ended")
                     }
             )
-            .padding(.bottom, (Double(CANVAS_HEIGHT) * SCALE - Double(CANVAS_HEIGHT)) / 2)
+            .padding(.top, vertical_padding)
+            .padding(.bottom, vertical_padding)
+            .padding(.leading, horizontal_padding)
+            .padding(.trailing, horizontal_padding)
             .scaleEffect(CGFloat(SCALE))
         }
         .applyIf(!interactive) { view in
             view.padding(30)
         }
     }
-    
-    var body: some View {
-        VStack {
-            Text("Hello, iMessage!")
-                .font(.largeTitle)
-                .padding()
-            
-            // Interactive canvas
-            createCanvas(interactive: true)
-            
-            Button("Tap me!") {
-                print("Button tapped!")
-                let renderer = ImageRenderer(content: createCanvas(interactive: false))
-                if let image = renderer.uiImage {
-                    let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString).appendingPathExtension("png")
-                    if let data = image.pngData() {
-                        try? data.write(to: url)
-                    }
-                    conversation.insertAttachment(url, withAlternateFilename: "Image.png") { error in
-                        if let error = error {
-                            print("Failed to insert image: \(error.localizedDescription)")
-                        }
-                    }
-                }
-            }
-            .padding()
-            .background(Color.blue)
-            .foregroundColor(.white)
-            .cornerRadius(10)
-        }
-    }
 }
+
+// Extensions
 
 extension View {
     // Helper modifier to conditionally apply a view modifier
@@ -140,64 +176,18 @@ extension View {
     }
 }
 
-
-func createSticker(fileURL: URL, localizedDescription: String) -> MSSticker? {
-    do {
-        return try MSSticker(contentsOfFileURL: fileURL, localizedDescription: localizedDescription)
-    } catch {
-        print("Error creating sticker: \(error)")
-        return nil
-    }
-}
-
-
-func createDynamicSticker(text: String, size: CGSize, completion: @escaping (URL?) -> Void) {
-    // Define file URL for the sticker
-    let fileURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString).appendingPathExtension("png")
-    
-    // Create a graphics context
-    UIGraphicsBeginImageContext(size)
-    guard let context = UIGraphicsGetCurrentContext() else {
-        completion(nil)
-        return
-    }
-    
-    // Draw background
-    UIColor.systemBlue.setFill()
-    context.fill(CGRect(origin: .zero, size: size))
-    
-    // Draw text
-    let textAttributes: [NSAttributedString.Key: Any] = [
-        .font: UIFont.boldSystemFont(ofSize: 36),
-        .foregroundColor: UIColor.white
-    ]
-    let textRect = CGRect(x: 0, y: 0, width: size.width, height: size.height)
-    let textString = NSString(string: text)
-    textString.draw(in: textRect, withAttributes: textAttributes)
-    
-    // Get the image and write to file
-    if let image = UIGraphicsGetImageFromCurrentImageContext() {
-        do {
-            try image.pngData()?.write(to: fileURL)
-            completion(fileURL)
-        } catch {
-            print("Error writing image to file: \(error)")
-            completion(nil)
-        }
-    }
-    UIGraphicsEndImageContext()
-}
-
 extension View {
-    func cornerRadiusWithBorder(radius: CGFloat, borderLineWidth: CGFloat = 1, borderColor: Color = .gray, antialiased: Bool = true) -> some View {
-        modifier(ModifierCornerRadiusWithBorder(radius: radius, borderLineWidth: borderLineWidth, borderColor: borderColor, antialiased: antialiased))
+    func roundedBorder(radius: CGFloat, borderLineWidth: CGFloat = 1, borderColor: Color = .gray, inset: CGFloat = 0, name: Bool = false, antialiased: Bool = true) -> some View {
+        modifier(ModifierroundedBorder(radius: radius, borderLineWidth: borderLineWidth, borderColor: borderColor, inset: inset, name: name, antialiased: antialiased))
     }
 }
 
-fileprivate struct ModifierCornerRadiusWithBorder: ViewModifier {
+fileprivate struct ModifierroundedBorder: ViewModifier {
     var radius: CGFloat
     var borderLineWidth: CGFloat = 1
     var borderColor: Color = .gray
+    var inset: CGFloat = 0
+    var name: Bool = false
     var antialiased: Bool = true
     
     func body(content: Content) -> some View {
@@ -206,20 +196,22 @@ fileprivate struct ModifierCornerRadiusWithBorder: ViewModifier {
             .overlay(
                 ZStack(alignment: .topLeading) {
                     RoundedRectangle(cornerRadius: self.radius)
+                        .inset(by: self.inset)
+                        .strokeBorder(self.borderColor, lineWidth: self.borderLineWidth, antialiased: self.antialiased)
+                    if name {
+                        UnevenRoundedRectangle(cornerRadii: .init(
+                            topLeading: self.radius,
+                            bottomTrailing: self.radius), style: .continuous)
+                        .inset(by: self.borderLineWidth)
+                        .frame(width: 59, height: 18)
+                        .foregroundStyle(fill_color)
+                        UnevenRoundedRectangle(cornerRadii: .init(
+                            topLeading: self.radius,
+                            bottomTrailing: self.radius), style: .continuous)
                         .inset(by: self.borderLineWidth)
                         .strokeBorder(self.borderColor, lineWidth: self.borderLineWidth, antialiased: self.antialiased)
-                    UnevenRoundedRectangle(cornerRadii: .init(
-                        topLeading: self.radius,
-                        bottomTrailing: self.radius), style: .continuous)
-                    .inset(by: self.borderLineWidth)
-                    .frame(width: 59, height: 18)
-                    .foregroundStyle(fill_color)
-                    UnevenRoundedRectangle(cornerRadii: .init(
-                        topLeading: self.radius,
-                        bottomTrailing: self.radius), style: .continuous)
-                    .inset(by: self.borderLineWidth)
-                    .strokeBorder(self.borderColor, lineWidth: self.borderLineWidth, antialiased: self.antialiased)
-                    .frame(width: 59, height: 18)
+                        .frame(width: 59, height: 18)
+                    }
                 }
             )
     }
