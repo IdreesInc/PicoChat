@@ -40,7 +40,7 @@ struct SwiftUIView: View {
                     if false {
                         Button("Tap me!") {
                             print("Button tapped!")
-                            let renderer = ImageRenderer(content: createCanvas(interactive: false))
+                            let renderer = ImageRenderer(content: chatCanvas(interactive: false))
                             if let image = renderer.uiImage {
                                 let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString).appendingPathExtension("png")
                                 if let data = image.pngData() {
@@ -60,7 +60,7 @@ struct SwiftUIView: View {
                     }
                     
                     // Interactive canvas
-                    createCanvas(interactive: true)
+                    chatCanvas(interactive: true)
                 }
                 .padding(.top, modalPadding)
                 .padding(.leading, modalPadding)
@@ -72,17 +72,29 @@ struct SwiftUIView: View {
                         .fill(background_color)
                         .frame(width: CGFloat(Double(CANVAS_WIDTH) * SCALE), height: CGFloat(Double(CANVAS_HEIGHT) * SCALE))
                         .roundedBorder(radius: 5 * PIXEL_SIZE, borderLineWidth: PIXEL_SIZE, borderColor: dark_border_color)
+                    
+                    rightControls()
                 }
                 .padding(.bottom, modalPadding)
             }
             .background(modal_background_color)
-            .roundedBorder(radius: 12, borderLineWidth: PIXEL_SIZE, borderColor: dark_border_color)
+            .roundedBorder(radius: 11, borderLineWidth: PIXEL_SIZE, borderColor: dark_border_color)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(background_color)
     }
     
-    private func createCanvas(interactive: Bool) -> some View {
+    private func rightControls() -> some View {
+        rightButton()
+    }
+    
+    private func rightButton() -> some View {
+        ZStack {
+            
+        }
+    }
+    
+    private func chatCanvas(interactive: Bool) -> some View {
         Canvas(
             opaque: true,
             colorMode: .linear,
@@ -177,25 +189,42 @@ extension View {
 }
 
 extension View {
-    func roundedBorder(radius: CGFloat, borderLineWidth: CGFloat = 1, borderColor: Color = .gray, inset: CGFloat = 0, name: Bool = false, antialiased: Bool = true) -> some View {
-        modifier(ModifierroundedBorder(radius: radius, borderLineWidth: borderLineWidth, borderColor: borderColor, inset: inset, name: name, antialiased: antialiased))
+    func roundedBorder(radius: CGFloat, borderLineWidth: CGFloat = 1, borderColor: Color = .gray, inset: CGFloat = 0, name: Bool = false, topLeft: Bool = true, topRight: Bool = true, bottomLeft: Bool = true, bottomRight: Bool = true) -> some View {
+        modifier(ModifierRoundedBorder(radius: radius, borderLineWidth: borderLineWidth, borderColor: borderColor, inset: inset, name: name, topLeft: topLeft, topRight: topRight, bottomLeft: bottomLeft, bottomRight: bottomRight))
     }
 }
 
-fileprivate struct ModifierroundedBorder: ViewModifier {
+fileprivate struct ModifierRoundedBorder: ViewModifier {
     var radius: CGFloat
     var borderLineWidth: CGFloat = 1
     var borderColor: Color = .gray
     var inset: CGFloat = 0
     var name: Bool = false
     var antialiased: Bool = true
+    var topLeft: Bool
+    var topRight: Bool
+    var bottomLeft: Bool
+    var bottomRight: Bool
+    
     
     func body(content: Content) -> some View {
         content
-            .cornerRadius(self.radius, antialiased: self.antialiased)
+            .clipShape(
+                .rect(
+                    topLeadingRadius: self.topLeft ? self.radius : 0,
+                    bottomLeadingRadius: self.bottomLeft ? self.radius : 0,
+                    bottomTrailingRadius: self.bottomRight ? self.radius : 0,
+                    topTrailingRadius: self.topRight ? self.radius : 0
+            ))
             .overlay(
                 ZStack(alignment: .topLeading) {
-                    RoundedRectangle(cornerRadius: self.radius)
+                    UnevenRoundedRectangle(
+                        cornerRadii: .init(
+                            topLeading: self.topLeft ? self.radius : 0,
+                            bottomLeading: self.bottomLeft ? self.radius : 0,
+                            bottomTrailing: self.bottomRight ? self.radius : 0,
+                            topTrailing: self.topRight ? self.radius : 0
+                        ))
                         .inset(by: self.inset)
                         .strokeBorder(self.borderColor, lineWidth: self.borderLineWidth, antialiased: self.antialiased)
                     if name {
