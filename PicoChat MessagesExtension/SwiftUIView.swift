@@ -15,18 +15,19 @@ let CANVAS_HEIGHT = 85
 let SCALED_CANVAS_WIDTH = Double(CANVAS_WIDTH) * SCALE
 let SCALED_CANVAS_HEIGHT = Double(CANVAS_HEIGHT) * SCALE
 let PIXEL_SIZE = SCALE
-let corner_radius = 6.0
-let controls_height = SCALED_CANVAS_HEIGHT + 10
+let CORNER_RADIUS = 6.0
+let CONTROLS_HEIGHT = SCALED_CANVAS_HEIGHT + 10
 
-let dark_color = Color(hex: "0b155b")
-let fill_color = Color(hex: "b7baef")
-let background_color = Color(hex: "fcfcfc")
-let modal_background_color = Color(hex: "b3b3b3")
-let dark_border_color = Color(hex: "666667")
-let button_fill_color = Color(hex: "e3e3e3")
+let APP_BACKGROUND_COLOR = Color(hex: "f0f0f0")
+let HIGHLIGHT_COLOR = Color(hex: "0b155b")
+let HIGHLIGHT_LIGHT_COLOR = Color(hex: "b7baef")
+let BACKGROUND_COLOR = Color(hex: "fcfcfc")
+let MODAL_BACKGROUND_COLOR = Color(hex: "b3b3b3")
+let DARK_BORDER_COLOR = Color(hex: "666667")
+let RIGHT_BUTTON_COLOR = Color(hex: "e3e3e3")
 
-let vertical_padding = (Double(CANVAS_HEIGHT) * SCALE - Double(CANVAS_HEIGHT)) / 2
-let horizontal_padding = (Double(CANVAS_WIDTH) * SCALE - Double(CANVAS_WIDTH)) / 2
+let VERTICAL_PADDING = (Double(CANVAS_HEIGHT) * SCALE - Double(CANVAS_HEIGHT)) / 2
+let HORIZONTAL_PADDING = (Double(CANVAS_WIDTH) * SCALE - Double(CANVAS_WIDTH)) / 2
 
 struct SwiftUIView: View {
     @State private var grid: [[Int]] = Array(repeating: Array(repeating: 0, count: CANVAS_WIDTH), count: CANVAS_HEIGHT)
@@ -35,40 +36,43 @@ struct SwiftUIView: View {
     
     var body: some View {
         // Whole view
-        HStack {
-            Spacer()
-            
-            // Canvas and Keyboard Modal
-            let modalPadding: CGFloat = 7
-            VStack {
-                // Canvas
-                VStack {
-                    // Interactive canvas
-                    chatCanvas(interactive: true)
-                }
-                .padding(.top, modalPadding)
-                .padding(.leading, modalPadding)
-                .padding(.trailing, modalPadding)
+        VStack {
+            HStack {
+                Spacer()
                 
-                // Keyboard and controls
-                HStack(spacing: 4) {
-                    RoundedRectangle(cornerRadius: 0)
-                        .fill(background_color)
-                        .frame(height: controls_height)
-                        .roundedBorder(radius: corner_radius * PIXEL_SIZE, borderLineWidth: PIXEL_SIZE, borderColor: dark_border_color)
+                // Canvas and Keyboard Modal
+                let modalPadding: CGFloat = 7
+                VStack {
+                    // Canvas
+                    VStack {
+                        // Interactive canvas
+                        chatCanvas(interactive: true)
+                    }
+                    .padding(.top, modalPadding)
+                    .padding(.leading, modalPadding)
+                    .padding(.trailing, modalPadding)
                     
-                    rightControls()
+                    // Keyboard and controls
+                    HStack(spacing: 4) {
+                        RoundedRectangle(cornerRadius: 0)
+                            .fill(BACKGROUND_COLOR)
+                            .frame(height: CONTROLS_HEIGHT)
+                            .roundedBorder(radius: CORNER_RADIUS * PIXEL_SIZE, borderLineWidth: PIXEL_SIZE, borderColor: DARK_BORDER_COLOR)
+                        
+                        rightControls()
+                    }
+                    .padding(.bottom, modalPadding)
+                    .padding(.leading, modalPadding)
                 }
-                .padding(.bottom, modalPadding)
-                .padding(.leading, modalPadding)
+                .background(MODAL_BACKGROUND_COLOR)
+                .frame(width: SCALED_CANVAS_WIDTH + 2 * modalPadding)
+                .roundedBorder(radius: 11, borderLineWidth: PIXEL_SIZE, borderColor: DARK_BORDER_COLOR, topRight: false, bottomRight: false)
+                .offset(x: PIXEL_SIZE * SCALE)
             }
-            .background(modal_background_color)
-            .frame(width: SCALED_CANVAS_WIDTH + 2 * modalPadding)
-            .roundedBorder(radius: 11, borderLineWidth: PIXEL_SIZE, borderColor: dark_border_color, topRight: false, bottomRight: false)
-            .offset(x: PIXEL_SIZE * SCALE)
+            .frame(maxWidth: .infinity)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(background_color)
+        .background(APP_BACKGROUND_COLOR)
     }
     
     private func send() {
@@ -106,7 +110,7 @@ struct SwiftUIView: View {
                 clear()
             }
         }
-        .frame(height: controls_height)
+        .frame(height: CONTROLS_HEIGHT)
     }
     
     private func rightButton(top: Bool = false, bottom: Bool = false) -> some View {
@@ -115,8 +119,8 @@ struct SwiftUIView: View {
         }
         .frame(width: 55)
         .frame(maxHeight: .infinity)
-        .background(button_fill_color)
-        .roundedBorder(radius: corner_radius * PIXEL_SIZE, borderLineWidth: PIXEL_SIZE, borderColor: dark_border_color, topLeft: top, topRight: false, bottomLeft: bottom, bottomRight: false)
+        .background(RIGHT_BUTTON_COLOR)
+        .roundedBorder(radius: CORNER_RADIUS * PIXEL_SIZE, borderLineWidth: PIXEL_SIZE, borderColor: DARK_BORDER_COLOR, topLeft: top, topRight: false, bottomLeft: bottom, bottomRight: false)
     }
     
     private func chatCanvas(interactive: Bool) -> some View {
@@ -126,7 +130,7 @@ struct SwiftUIView: View {
             rendersAsynchronously: false
         ) { context, size in
             // Fill the canvas with a white background
-            context.fill(Path(CGRect(origin: .zero, size: size)), with: .color(background_color))
+            context.fill(Path(CGRect(origin: .zero, size: size)), with: .color(BACKGROUND_COLOR))
             // Draw each pixel
             for y in 0..<grid.count {
                 for x in 0..<grid[y].count {
@@ -137,7 +141,7 @@ struct SwiftUIView: View {
             }
         }
         .frame(width: CGFloat(CANVAS_WIDTH), height: CGFloat(CANVAS_HEIGHT))
-        .roundedBorder(radius: corner_radius, borderLineWidth: 1, borderColor: dark_color, inset: 1, name: true)
+        .roundedBorder(radius: CORNER_RADIUS, borderLineWidth: 1, borderColor: HIGHLIGHT_COLOR, inset: 1, name: true)
         .applyIf(interactive) { view in
             view.gesture(
                 DragGesture(minimumDistance: 0, coordinateSpace: .local)
@@ -192,10 +196,10 @@ struct SwiftUIView: View {
                         print("Touch ended")
                     }
             )
-            .padding(.top, vertical_padding)
-            .padding(.bottom, vertical_padding)
-            .padding(.leading, horizontal_padding)
-            .padding(.trailing, horizontal_padding)
+            .padding(.top, VERTICAL_PADDING)
+            .padding(.bottom, VERTICAL_PADDING)
+            .padding(.leading, HORIZONTAL_PADDING)
+            .padding(.trailing, HORIZONTAL_PADDING)
             .scaleEffect(CGFloat(SCALE))
         }
         .applyIf(!interactive) { view in
@@ -258,7 +262,7 @@ fileprivate struct ModifierRoundedBorder: ViewModifier {
                             bottomTrailing: self.radius), style: .continuous)
                         .inset(by: self.borderLineWidth)
                         .frame(width: 59, height: 18)
-                        .foregroundStyle(fill_color)
+                        .foregroundStyle(HIGHLIGHT_LIGHT_COLOR)
                         UnevenRoundedRectangle(cornerRadii: .init(
                             topLeading: self.radius,
                             bottomTrailing: self.radius), style: .continuous)
