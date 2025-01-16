@@ -25,6 +25,7 @@ let BACKGROUND_COLOR = Color(hex: "fcfcfc")
 let MODAL_BACKGROUND_COLOR = Color(hex: "b3b3b3")
 let DARK_BORDER_COLOR = Color(hex: "666667")
 let RIGHT_BUTTON_COLOR = Color(hex: "e3e3e3")
+let KEYBOARD_BACKGROUND_COLOR = Color(hex: "fcfcfd")
 
 let VERTICAL_PADDING = (Double(CANVAS_HEIGHT) * SCALE - Double(CANVAS_HEIGHT)) / 2
 let HORIZONTAL_PADDING = (Double(CANVAS_WIDTH) * SCALE - Double(CANVAS_WIDTH)) / 2
@@ -55,12 +56,12 @@ struct SwiftUIView: View {
                     // Keyboard and controls
                     HStack(spacing: 4) {
                         RoundedRectangle(cornerRadius: 0)
-                            .fill(BACKGROUND_COLOR)
+                            .fill(KEYBOARD_BACKGROUND_COLOR)
                             .frame(height: CONTROLS_HEIGHT)
                             .roundedBorder(radius: CORNER_RADIUS * PIXEL_SIZE, borderLineWidth: PIXEL_SIZE, borderColor: DARK_BORDER_COLOR)
                         
                         rightControls()
-                    }
+                }
                     .padding(.bottom, modalPadding)
                     .padding(.leading, modalPadding)
                 }
@@ -120,7 +121,7 @@ struct SwiftUIView: View {
         .frame(width: 55)
         .frame(maxHeight: .infinity)
         .background(RIGHT_BUTTON_COLOR)
-        .roundedBorder(radius: CORNER_RADIUS * PIXEL_SIZE, borderLineWidth: PIXEL_SIZE, borderColor: DARK_BORDER_COLOR, topLeft: top, topRight: false, bottomLeft: bottom, bottomRight: false)
+        .roundedBorder(radius: CORNER_RADIUS * PIXEL_SIZE, borderLineWidth: PIXEL_SIZE, borderColor: DARK_BORDER_COLOR, insetColor: KEYBOARD_BACKGROUND_COLOR, topLeft: top, topRight: false, bottomLeft: bottom, bottomRight: false)
     }
     
     private func chatCanvas(interactive: Bool) -> some View {
