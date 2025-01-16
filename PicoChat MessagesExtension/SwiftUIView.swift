@@ -11,12 +11,13 @@ import Messages
 
 let SCALE = 1.5
 let CANVAS_WIDTH = 234
-let CANVAS_HEIGHT = 85
+let NOTEBOOK_LINE_SPACING = 17
+let CANVAS_HEIGHT = NOTEBOOK_LINE_SPACING * 5
 let SCALED_CANVAS_WIDTH = Double(CANVAS_WIDTH) * SCALE
 let SCALED_CANVAS_HEIGHT = Double(CANVAS_HEIGHT) * SCALE
 let PIXEL_SIZE = SCALE
 let CORNER_RADIUS = 6.0
-let CONTROLS_HEIGHT = SCALED_CANVAS_HEIGHT + 10
+let CONTROLS_HEIGHT = SCALED_CANVAS_HEIGHT
 
 let APP_BACKGROUND_COLOR = Color(hex: "f0f0f0")
 let HIGHLIGHT_COLOR = Color(hex: "0b155b")
@@ -135,7 +136,6 @@ struct SwiftUIView: View {
             context.fill(Path(CGRect(origin: .zero, size: size)), with: .color(BACKGROUND_COLOR))
             // Draw notebook lines
             if (interactive) {
-                let NOTEBOOK_LINE_SPACING = 17
                 for y in stride(from: 0, to: CANVAS_HEIGHT, by: NOTEBOOK_LINE_SPACING) {
                     context.stroke(Path { path in
                         path.move(to: CGPoint(x: 0, y: y))
@@ -214,7 +214,8 @@ struct SwiftUIView: View {
             .scaleEffect(CGFloat(SCALE))
         }
         .applyIf(!interactive) { view in
-            view.padding(.top, 28)
+            view
+            .padding(.top, 28)
             .padding(.bottom, 28)
             .padding(.leading, 10)
             .padding(.trailing, 10)
@@ -285,14 +286,14 @@ fileprivate struct ModifierRoundedBorder: ViewModifier {
                             topLeading: self.radius,
                             bottomTrailing: self.radius), style: .continuous)
                         .inset(by: self.borderLineWidth)
-                        .frame(width: 59, height: 18)
+                        .frame(width: 59, height: CGFloat(NOTEBOOK_LINE_SPACING) + 1)
                         .foregroundStyle(HIGHLIGHT_LIGHT_COLOR)
                         UnevenRoundedRectangle(cornerRadii: .init(
                             topLeading: self.radius,
                             bottomTrailing: self.radius), style: .continuous)
                         .inset(by: self.borderLineWidth)
                         .strokeBorder(HIGHLIGHT_COLOR, lineWidth: self.borderLineWidth, antialiased: self.antialiased)
-                        .frame(width: 59, height: 18)
+                        .frame(width: 59, height: CGFloat(NOTEBOOK_LINE_SPACING) + 1)
                     }
                 }
             )
