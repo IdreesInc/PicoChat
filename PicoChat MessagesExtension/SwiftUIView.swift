@@ -104,6 +104,7 @@ struct SwiftUIView: View {
             rightButton(top: true)
             .onTapGesture {
                 send()
+                clear()
             }
             rightButton()
             rightButton(bottom: true)
@@ -132,6 +133,16 @@ struct SwiftUIView: View {
         ) { context, size in
             // Fill the canvas with a white background
             context.fill(Path(CGRect(origin: .zero, size: size)), with: .color(BACKGROUND_COLOR))
+            // Draw notebook lines
+            if (interactive) {
+                let NOTEBOOK_LINE_SPACING = 17
+                for y in stride(from: 0, to: CANVAS_HEIGHT, by: NOTEBOOK_LINE_SPACING) {
+                    context.stroke(Path { path in
+                        path.move(to: CGPoint(x: 0, y: y))
+                        path.addLine(to: CGPoint(x: CANVAS_WIDTH, y: y))
+                    }, with: .color(HIGHLIGHT_LIGHT_COLOR), lineWidth: 1)
+                }
+            }
             // Draw each pixel
             for y in 0..<grid.count {
                 for x in 0..<grid[y].count {
@@ -167,7 +178,6 @@ struct SwiftUIView: View {
                             let sy = y0 < y1 ? 1 : -1
                             
                             var err = dx - dy
-                            
                             var x = x0
                             var y = y0
                             
@@ -204,7 +214,10 @@ struct SwiftUIView: View {
             .scaleEffect(CGFloat(SCALE))
         }
         .applyIf(!interactive) { view in
-            view.padding(30)
+            view.padding(.top, 28)
+            .padding(.bottom, 28)
+            .padding(.leading, 10)
+            .padding(.trailing, 10)
         }
     }
 }
