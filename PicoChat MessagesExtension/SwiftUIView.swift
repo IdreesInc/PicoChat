@@ -13,12 +13,14 @@ let SCALE = 1.5
 let CANVAS_WIDTH = 234
 let CANVAS_HEIGHT = 85
 let PIXEL_SIZE = SCALE
+let corner_radius = 6.0
 
 let dark_color = Color(hex: "0b155b")
 let fill_color = Color(hex: "b7baef")
 let background_color = Color(hex: "fcfcfc")
 let modal_background_color = Color(hex: "b3b3b3")
 let dark_border_color = Color(hex: "666667")
+let button_fill_color = Color(hex: "e3e3e3")
 
 let vertical_padding = (Double(CANVAS_HEIGHT) * SCALE - Double(CANVAS_HEIGHT)) / 2
 let horizontal_padding = (Double(CANVAS_WIDTH) * SCALE - Double(CANVAS_WIDTH)) / 2
@@ -36,29 +38,6 @@ struct SwiftUIView: View {
             VStack {
                 // Canvas
                 VStack {
-                    // Button for testing
-                    if false {
-                        Button("Tap me!") {
-                            print("Button tapped!")
-                            let renderer = ImageRenderer(content: chatCanvas(interactive: false))
-                            if let image = renderer.uiImage {
-                                let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString).appendingPathExtension("png")
-                                if let data = image.pngData() {
-                                    try? data.write(to: url)
-                                }
-                                conversation.insertAttachment(url, withAlternateFilename: "Image.png") { error in
-                                    if let error = error {
-                                        print("Failed to insert image: \(error.localizedDescription)")
-                                    }
-                                }
-                            }
-                        }
-                        .padding()
-                        .background(Color.blue)
-                        .foregroundColor(.white)
-                        .cornerRadius(10)
-                    }
-                    
                     // Interactive canvas
                     chatCanvas(interactive: true)
                 }
@@ -70,28 +49,57 @@ struct SwiftUIView: View {
                 HStack {
                     RoundedRectangle(cornerRadius: 0)
                         .fill(background_color)
-                        .frame(width: CGFloat(Double(CANVAS_WIDTH) * SCALE), height: CGFloat(Double(CANVAS_HEIGHT) * SCALE))
-                        .roundedBorder(radius: 5 * PIXEL_SIZE, borderLineWidth: PIXEL_SIZE, borderColor: dark_border_color)
+                        .frame(height: CGFloat(Double(CANVAS_HEIGHT) * SCALE))
+                        .roundedBorder(radius: corner_radius * PIXEL_SIZE, borderLineWidth: PIXEL_SIZE, borderColor: dark_border_color)
                     
                     rightControls()
                 }
                 .padding(.bottom, modalPadding)
+                .padding(.leading, modalPadding)
             }
             .background(modal_background_color)
-            .roundedBorder(radius: 11, borderLineWidth: PIXEL_SIZE, borderColor: dark_border_color)
+            .frame(width: CGFloat(CANVAS_WIDTH) * SCALE + 2 * modalPadding)
+            .roundedBorder(radius: 11, borderLineWidth: PIXEL_SIZE, borderColor: dark_border_color, topRight: false, bottomRight: false)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(background_color)
     }
     
     private func rightControls() -> some View {
-        rightButton()
+        VStack (spacing: 0){
+            rightButton(top: true)
+            .onTapGesture {
+                send()
+            }
+            rightButton()
+            rightButton(bottom: true)
+        }
+        .frame(height: CGFloat(Double(CANVAS_HEIGHT) * SCALE))
     }
     
-    private func rightButton() -> some View {
+    private func send() {
+        let renderer = ImageRenderer(content: chatCanvas(interactive: false))
+        if let image = renderer.uiImage {
+            let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString).appendingPathExtension("png")
+            if let data = image.pngData() {
+                try? data.write(to: url)
+            }
+            conversation.insertAttachment(url, withAlternateFilename: "Image.png") { error in
+                if let error = error {
+                    print("Failed to insert image: \(error.localizedDescription)")
+                }
+            }
+        }
+    }
+    
+    private func rightButton(top: Bool = false, bottom: Bool = false) -> some View {
         ZStack {
             
         }
+        .frame(width: 50)
+        .frame(maxHeight: .infinity)
+        .background(button_fill_color)
+        .roundedBorder(radius: corner_radius * PIXEL_SIZE, borderLineWidth: PIXEL_SIZE, borderColor: dark_border_color, topLeft: top, topRight: false, bottomLeft: bottom, bottomRight: false)
     }
     
     private func chatCanvas(interactive: Bool) -> some View {
@@ -112,7 +120,7 @@ struct SwiftUIView: View {
             }
         }
         .frame(width: CGFloat(CANVAS_WIDTH), height: CGFloat(CANVAS_HEIGHT))
-        .roundedBorder(radius: 5, borderLineWidth: 1, borderColor: dark_color, inset: 1, name: true)
+        .roundedBorder(radius: corner_radius, borderLineWidth: 1, borderColor: dark_color, inset: 1, name: true)
         .applyIf(interactive) { view in
             view.gesture(
                 DragGesture(minimumDistance: 0, coordinateSpace: .local)
