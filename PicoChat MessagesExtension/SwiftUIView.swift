@@ -141,7 +141,7 @@ struct SwiftUIView: View {
             }
         }
         .frame(width: CGFloat(CANVAS_WIDTH), height: CGFloat(CANVAS_HEIGHT))
-        .roundedBorder(radius: CORNER_RADIUS, borderLineWidth: 1, borderColor: HIGHLIGHT_COLOR, inset: 1, name: true)
+        .roundedBorder(radius: CORNER_RADIUS, borderLineWidth: 1, borderColor: .white, insetColor: HIGHLIGHT_COLOR, name: true)
         .applyIf(interactive) { view in
             view.gesture(
                 DragGesture(minimumDistance: 0, coordinateSpace: .local)
@@ -218,8 +218,8 @@ extension View {
 }
 
 extension View {
-    func roundedBorder(radius: CGFloat, borderLineWidth: CGFloat = 1, borderColor: Color = .gray, inset: CGFloat = 0, name: Bool = false, topLeft: Bool = true, topRight: Bool = true, bottomLeft: Bool = true, bottomRight: Bool = true) -> some View {
-        modifier(ModifierRoundedBorder(radius: radius, borderLineWidth: borderLineWidth, borderColor: borderColor, inset: inset, name: name, topLeft: topLeft, topRight: topRight, bottomLeft: bottomLeft, bottomRight: bottomRight))
+    func roundedBorder(radius: CGFloat, borderLineWidth: CGFloat = 1, borderColor: Color = .gray, insetColor: Color? = nil, name: Bool = false, topLeft: Bool = true, topRight: Bool = true, bottomLeft: Bool = true, bottomRight: Bool = true) -> some View {
+        modifier(ModifierRoundedBorder(radius: radius, borderLineWidth: borderLineWidth, borderColor: borderColor, insetColor: insetColor, name: name, topLeft: topLeft, topRight: topRight, bottomLeft: bottomLeft, bottomRight: bottomRight))
     }
 }
 
@@ -227,7 +227,7 @@ fileprivate struct ModifierRoundedBorder: ViewModifier {
     var radius: CGFloat
     var borderLineWidth: CGFloat = 1
     var borderColor: Color = .gray
-    var inset: CGFloat = 0
+    var insetColor: Color?
     var name: Bool = false
     var antialiased: Bool = true
     var topLeft: Bool
@@ -254,8 +254,18 @@ fileprivate struct ModifierRoundedBorder: ViewModifier {
                             bottomTrailing: self.bottomRight ? self.radius : 0,
                             topTrailing: self.topRight ? self.radius : 0
                         ))
-                        .inset(by: self.inset)
-                        .strokeBorder(self.borderColor, lineWidth: self.borderLineWidth, antialiased: self.antialiased)
+                    .strokeBorder(self.borderColor, lineWidth: self.borderLineWidth, antialiased: self.antialiased)
+                    if self.insetColor != nil {
+                        UnevenRoundedRectangle(
+                            cornerRadii: .init(
+                                topLeading: self.topLeft ? self.radius : 0,
+                                bottomLeading: self.bottomLeft ? self.radius : 0,
+                                bottomTrailing: self.bottomRight ? self.radius : 0,
+                                topTrailing: self.topRight ? self.radius : 0
+                            ))
+                        .inset(by: self.borderLineWidth)
+                        .strokeBorder(self.insetColor!, lineWidth: self.borderLineWidth, antialiased: self.antialiased)
+                    }
                     if name {
                         UnevenRoundedRectangle(cornerRadii: .init(
                             topLeading: self.radius,
@@ -267,7 +277,7 @@ fileprivate struct ModifierRoundedBorder: ViewModifier {
                             topLeading: self.radius,
                             bottomTrailing: self.radius), style: .continuous)
                         .inset(by: self.borderLineWidth)
-                        .strokeBorder(self.borderColor, lineWidth: self.borderLineWidth, antialiased: self.antialiased)
+                        .strokeBorder(HIGHLIGHT_COLOR, lineWidth: self.borderLineWidth, antialiased: self.antialiased)
                         .frame(width: 59, height: 18)
                     }
                 }
