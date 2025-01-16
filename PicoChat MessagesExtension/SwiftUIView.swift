@@ -12,8 +12,11 @@ import Messages
 let SCALE = 1.5
 let CANVAS_WIDTH = 234
 let CANVAS_HEIGHT = 85
+let SCALED_CANVAS_WIDTH = Double(CANVAS_WIDTH) * SCALE
+let SCALED_CANVAS_HEIGHT = Double(CANVAS_HEIGHT) * SCALE
 let PIXEL_SIZE = SCALE
 let corner_radius = 6.0
+let controls_height = SCALED_CANVAS_HEIGHT + 10
 
 let dark_color = Color(hex: "0b155b")
 let fill_color = Color(hex: "b7baef")
@@ -33,6 +36,8 @@ struct SwiftUIView: View {
     var body: some View {
         // Whole view
         HStack {
+            Spacer()
+            
             // Canvas and Keyboard Modal
             let modalPadding: CGFloat = 7
             VStack {
@@ -46,10 +51,10 @@ struct SwiftUIView: View {
                 .padding(.trailing, modalPadding)
                 
                 // Keyboard and controls
-                HStack {
+                HStack(spacing: 4) {
                     RoundedRectangle(cornerRadius: 0)
                         .fill(background_color)
-                        .frame(height: CGFloat(Double(CANVAS_HEIGHT) * SCALE))
+                        .frame(height: controls_height)
                         .roundedBorder(radius: corner_radius * PIXEL_SIZE, borderLineWidth: PIXEL_SIZE, borderColor: dark_border_color)
                     
                     rightControls()
@@ -58,23 +63,12 @@ struct SwiftUIView: View {
                 .padding(.leading, modalPadding)
             }
             .background(modal_background_color)
-            .frame(width: CGFloat(CANVAS_WIDTH) * SCALE + 2 * modalPadding)
+            .frame(width: SCALED_CANVAS_WIDTH + 2 * modalPadding)
             .roundedBorder(radius: 11, borderLineWidth: PIXEL_SIZE, borderColor: dark_border_color, topRight: false, bottomRight: false)
+            .offset(x: PIXEL_SIZE * SCALE)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(background_color)
-    }
-    
-    private func rightControls() -> some View {
-        VStack (spacing: 0){
-            rightButton(top: true)
-            .onTapGesture {
-                send()
-            }
-            rightButton()
-            rightButton(bottom: true)
-        }
-        .frame(height: CGFloat(Double(CANVAS_HEIGHT) * SCALE))
     }
     
     private func send() {
@@ -92,11 +86,34 @@ struct SwiftUIView: View {
         }
     }
     
+    private func clear() {
+        for y in 0..<grid.count {
+            for x in 0..<grid[y].count {
+                grid[y][x] = 0
+            }
+        }
+    }
+    
+    private func rightControls() -> some View {
+        VStack (spacing: 0){
+            rightButton(top: true)
+            .onTapGesture {
+                send()
+            }
+            rightButton()
+            rightButton(bottom: true)
+            .onTapGesture {
+                clear()
+            }
+        }
+        .frame(height: controls_height)
+    }
+    
     private func rightButton(top: Bool = false, bottom: Bool = false) -> some View {
         ZStack {
             
         }
-        .frame(width: 50)
+        .frame(width: 55)
         .frame(maxHeight: .infinity)
         .background(button_fill_color)
         .roundedBorder(radius: corner_radius * PIXEL_SIZE, borderLineWidth: PIXEL_SIZE, borderColor: dark_border_color, topLeft: top, topRight: false, bottomLeft: bottom, bottomRight: false)
