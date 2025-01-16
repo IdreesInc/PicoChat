@@ -27,20 +27,40 @@ let MODAL_BACKGROUND_COLOR = Color(hex: "b3b3b3")
 let DARK_BORDER_COLOR = Color(hex: "666667")
 let RIGHT_BUTTON_COLOR = Color(hex: "e3e3e3")
 let KEYBOARD_BACKGROUND_COLOR = Color(hex: "fcfcfd")
+let LEFT_BUTTON_BACKGROUND_COLOR = Color(hex: "b5b5b5")
 
 let VERTICAL_PADDING = (Double(CANVAS_HEIGHT) * SCALE - Double(CANVAS_HEIGHT)) / 2
 let HORIZONTAL_PADDING = (Double(CANVAS_WIDTH) * SCALE - Double(CANVAS_WIDTH)) / 2
 
+enum PenType {
+    case pen
+    case eraser
+}
+
+enum PenSize {
+    case big
+    case small
+}
+
 struct SwiftUIView: View {
     @State private var grid: [[Int]] = Array(repeating: Array(repeating: 0, count: CANVAS_WIDTH), count: CANVAS_HEIGHT)
     @State private var lastTouchLocation: CGPoint? = nil
+    @State private var penType = PenType.pen
+    @State private var penSize = PenSize.big
+    
     let conversation: MSConversation
     
     var body: some View {
         // Whole view
         VStack {
-            HStack {
-                Spacer()
+            Spacer()
+                .layoutPriority(2)
+                .frame(maxHeight: 15)
+
+            // App
+            HStack(spacing: 0) {
+                // Left buttons
+                leftControls()
                 
                 // Canvas and Keyboard Modal
                 let modalPadding: CGFloat = 7
@@ -56,11 +76,13 @@ struct SwiftUIView: View {
                     
                     // Keyboard and controls
                     HStack(spacing: 4) {
+                        // Keyboard
                         RoundedRectangle(cornerRadius: 0)
                             .fill(KEYBOARD_BACKGROUND_COLOR)
                             .frame(height: CONTROLS_HEIGHT)
                             .roundedBorder(radius: CORNER_RADIUS * PIXEL_SIZE, borderLineWidth: PIXEL_SIZE, borderColor: DARK_BORDER_COLOR)
                         
+                        // Right buttons
                         rightControls()
                 }
                     .padding(.bottom, modalPadding)
@@ -72,6 +94,9 @@ struct SwiftUIView: View {
                 .offset(x: PIXEL_SIZE * SCALE)
             }
             .frame(maxWidth: .infinity)
+            
+            Spacer()
+                .layoutPriority(2)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(APP_BACKGROUND_COLOR)
@@ -79,6 +104,7 @@ struct SwiftUIView: View {
     
     private func send() {
         let renderer = ImageRenderer(content: chatCanvas(interactive: false))
+        renderer.scale = 5
         if let image = renderer.uiImage {
             let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString).appendingPathExtension("png")
             if let data = image.pngData() {
@@ -92,12 +118,82 @@ struct SwiftUIView: View {
         }
     }
     
+    private func sendAsSticker() {
+        let renderer = ImageRenderer(content: chatCanvas(interactive: false))
+        if let image = renderer.uiImage {
+            let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString).appendingPathExtension("png")
+            if let data = image.pngData() {
+                try? data.write(to: url)
+            }
+            conversation.insert(try! MSSticker(contentsOfFileURL: url, localizedDescription: "Sticker")) { error in
+                if let error = error {
+                    print("Failed to insert sticker: \(error.localizedDescription)")
+                }
+            }
+        }
+    }
+    
     private func clear() {
         for y in 0..<grid.count {
             for x in 0..<grid[y].count {
                 grid[y][x] = 0
             }
         }
+    }
+    
+    private func leftControls() -> some View {
+        VStack(spacing: 0) {
+            // Pen
+            leftButton(highlight: penType == PenType.pen, top: true)
+                .onTapGesture {
+                    penType = PenType.pen
+                }
+            Spacer()
+            // Eraser
+            leftButton(highlight: penType == PenType.eraser)
+                .onTapGesture {
+                    penType = PenType.eraser
+                }
+            Spacer()
+            // Big pen
+            leftButton(highlight: penSize == PenSize.big)
+                .onTapGesture {
+                    penSize = PenSize.big
+                }
+            Spacer()
+            // Small pen
+            leftButton(highlight: penSize == PenSize.small)
+                .onTapGesture {
+                    penSize = PenSize.small
+                }
+            Spacer()
+            // Alphanumeric
+            leftButton()
+            Spacer()
+            // Accent
+            leftButton()
+            Spacer()
+            // Japanese
+            leftButton()
+            Spacer()
+            // Symbols
+            leftButton()
+            Spacer()
+            // Emoji
+            leftButton(bottom: true)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(.top, PIXEL_SIZE)
+        .padding(.bottom, 15)
+        .layoutPriority(1)
+    }
+    
+    private func leftButton(highlight: Bool = false, top: Bool = false, bottom: Bool = false) -> some View {
+        ZStack {
+        }
+        .frame(width: 22, height: 22)
+        .background(highlight ? HIGHLIGHT_LIGHT_COLOR : LEFT_BUTTON_BACKGROUND_COLOR)
+        .roundedBorder(radius: 4, borderLineWidth: PIXEL_SIZE, borderColor: highlight ? HIGHLIGHT_LIGHT_COLOR : LEFT_BUTTON_BACKGROUND_COLOR, insetColor: nil, topLeft: top, topRight: false, bottomLeft: bottom, bottomRight: false)
     }
     
     private func rightControls() -> some View {
@@ -118,7 +214,6 @@ struct SwiftUIView: View {
     
     private func rightButton(top: Bool = false, bottom: Bool = false) -> some View {
         ZStack {
-            
         }
         .frame(width: 55)
         .frame(maxHeight: .infinity)
@@ -158,8 +253,14 @@ struct SwiftUIView: View {
             view.gesture(
                 DragGesture(minimumDistance: 0, coordinateSpace: .local)
                     .onChanged { value in
+                        let ink = penType == PenType.eraser ? 0 : 1
                         if value.location.x >= 0 && value.location.x < CGFloat(CANVAS_WIDTH) && value.location.y >= 0 && value.location.y < CGFloat(CANVAS_HEIGHT) {
-                            grid[Int(value.location.y)][Int(value.location.x)] = 1
+                            draw(x: Int(value.location.x), y: Int(value.location.y), value: ink)
+                            if penSize == PenSize.big {
+                                draw(x: Int(value.location.x) - 1, y: Int(value.location.y), value: ink)
+                                draw(x: Int(value.location.x) - 1, y: Int(value.location.y) - 1, value: ink)
+                                draw(x: Int(value.location.x), y: Int(value.location.y) - 1, value: ink)
+                            }
                         }
                         if let lastTouch = lastTouchLocation {
                             // Bresenham's Line Algorithm
@@ -182,8 +283,11 @@ struct SwiftUIView: View {
                             var y = y0
                             
                             while true {
-                                if x >= 0 && x < CANVAS_WIDTH && y >= 0 && y < CANVAS_HEIGHT {
-                                    grid[y][x] = 1
+                                draw(x: x, y: y, value: ink)
+                                if penSize == PenSize.big {
+                                    draw(x: x - 1, y: y, value: ink)
+                                    draw(x: x - 1, y: y - 1, value: ink)
+                                    draw(x: x, y: y - 1, value: ink)
                                 }
                                 if x == x1 && y == y1 {
                                     break
@@ -217,8 +321,14 @@ struct SwiftUIView: View {
             view
             .padding(.top, 28)
             .padding(.bottom, 28)
-            .padding(.leading, 10)
-            .padding(.trailing, 10)
+            .padding(.leading, 5)
+            .padding(.trailing, 5)
+        }
+    }
+    
+    func draw(x: Int, y: Int, value: Int) {
+        if (x >= 0 && x < CANVAS_WIDTH && y >= 0 && y < CANVAS_HEIGHT) {
+            grid[y][x] = value;
         }
     }
 }
