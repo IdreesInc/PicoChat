@@ -11,13 +11,14 @@ import Messages
 
 let SCALE = 1.5
 let CANVAS_WIDTH = 234
-let NOTEBOOK_LINE_SPACING = 17
-let CANVAS_HEIGHT = NOTEBOOK_LINE_SPACING * 5
+let NOTEBOOK_LINE_SPACING = 18
+let CANVAS_HEIGHT = NOTEBOOK_LINE_SPACING * 5 + 1
+let NAME_WIDTH = 59
 let SCALED_CANVAS_WIDTH = Double(CANVAS_WIDTH) * SCALE
 let SCALED_CANVAS_HEIGHT = Double(CANVAS_HEIGHT) * SCALE
 let PIXEL_SIZE = SCALE
 let CORNER_RADIUS = 6.0
-let CONTROLS_HEIGHT = SCALED_CANVAS_HEIGHT
+let CONTROLS_HEIGHT = SCALED_CANVAS_HEIGHT - PIXEL_SIZE * 5
 
 let APP_BACKGROUND_COLOR = Color(hex: "f0f0f0")
 let HIGHLIGHT_COLOR = Color(hex: "0b155b")
@@ -60,6 +61,8 @@ struct SwiftUIView: View {
     @State private var penType = PenType.pen
     @State private var penSize = PenSize.big
     @State private var keyboard = Keyboard.lowercase
+    
+    @State private var lastGlyphLocation = [NAME_WIDTH + 4 - 1, NOTEBOOK_LINE_SPACING - 3]
     
     let conversation: MSConversation
     let keyboards = [
@@ -220,6 +223,16 @@ struct SwiftUIView: View {
         .onTapGesture {
             if glyph == "SHIFT" {
                 keyboard = keyboard == Keyboard.uppercase ? Keyboard.lowercase : Keyboard.uppercase
+            } else {
+                var nextX = lastGlyphLocation[0] + 1
+                var nextY = lastGlyphLocation[1]
+                if (nextX + width >= CANVAS_WIDTH - 4) {
+                    nextX = 4
+                    nextY += NOTEBOOK_LINE_SPACING
+                }
+                type(x: nextX, y: nextY, glyph: glyph)
+                lastGlyphLocation[0] = nextX + width
+                lastGlyphLocation[1] = nextY
             }
         }
     }
@@ -417,10 +430,10 @@ struct SwiftUIView: View {
         }
         .applyIf(!interactive) { view in
             view
-            .padding(.top, 28)
-            .padding(.bottom, 28)
-            .padding(.leading, 5)
-            .padding(.trailing, 5)
+            .padding(.top, 25)
+            .padding(.bottom, 25)
+            .padding(.leading, 6)
+            .padding(.trailing, 6)
         }
     }
     
@@ -429,6 +442,20 @@ struct SwiftUIView: View {
             grid[y][x] = value;
         }
     }
+    
+    func type(x: Int, y: Int, glyph: String) {
+        let pixels = Glyphs.glyphPixels[glyph] ?? Glyphs.glyphPixels["A"]!
+        let adjustments = Glyphs.adjustments[glyph] ?? [0, 0]
+        let width = pixels[0].count
+        let height = pixels.count
+        let yMod = adjustments[1]
+        for row in 0..<height {
+            for col in 0..<width {
+                draw(x: x + col, y: y + row - height + yMod, value: pixels[row][col])
+            }
+        }
+    }
+        
 }
 
 // Extensions
@@ -501,7 +528,7 @@ fileprivate struct ModifierRoundedBorder: ViewModifier {
                             bottomTrailing: self.radius), style: .continuous)
                         .inset(by: self.borderLineWidth)
                         .strokeBorder(HIGHLIGHT_COLOR, lineWidth: self.borderLineWidth, antialiased: self.antialiased)
-                        .frame(width: 59, height: CGFloat(NOTEBOOK_LINE_SPACING) + 1)
+                        .frame(width: CGFloat(NAME_WIDTH), height: CGFloat(NOTEBOOK_LINE_SPACING) + 1)
                     }
                 }
             )
