@@ -222,6 +222,7 @@ struct SwiftUIView: View {
         .frame(width: keyWidth)
         .background(keyColor)
         .onTapGesture {
+            let HORIZONTAL_MARGIN = 5
             if glyph == "SHIFT" {
                 keyboard = keyboard == Keyboard.uppercase ? Keyboard.lowercase : Keyboard.uppercase
                 capsLock = false
@@ -232,6 +233,9 @@ struct SwiftUIView: View {
                 } else {
                     keyboard = Keyboard.lowercase
                 }
+            } else if glyph == "ENTER" {
+                lastGlyphLocation[0] = HORIZONTAL_MARGIN - 1
+                lastGlyphLocation[1] += NOTEBOOK_LINE_SPACING
             } else {
                 var text = glyph
                 var textWidth = width
@@ -241,8 +245,8 @@ struct SwiftUIView: View {
                 }
                 var nextX = lastGlyphLocation[0] + 1
                 var nextY = lastGlyphLocation[1]
-                if (nextX + textWidth >= CANVAS_WIDTH - 4) {
-                    nextX = 4
+                if (nextX + textWidth >= CANVAS_WIDTH - HORIZONTAL_MARGIN) {
+                    nextX = HORIZONTAL_MARGIN
                     nextY += NOTEBOOK_LINE_SPACING
                 }
                 type(x: nextX, y: nextY, glyph: text)
