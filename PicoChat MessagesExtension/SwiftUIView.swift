@@ -21,13 +21,16 @@ let CONTROLS_HEIGHT = SCALED_CANVAS_HEIGHT
 
 let APP_BACKGROUND_COLOR = Color(hex: "f0f0f0")
 let HIGHLIGHT_COLOR = Color(hex: "0b155b")
-let HIGHLIGHT_LIGHT_COLOR = Color(hex: "b7baef")
+let HIGHLIGHT_LIGHT_COLOR = Color(hex: "b6ccff")
 let BACKGROUND_COLOR = Color(hex: "fcfcfc")
 let MODAL_BACKGROUND_COLOR = Color(hex: "b3b3b3")
 let DARK_BORDER_COLOR = Color(hex: "666667")
 let RIGHT_BUTTON_COLOR = Color(hex: "e3e3e3")
 let KEYBOARD_BACKGROUND_COLOR = Color(hex: "fcfcfd")
+let KEYBOARD_BUTTON_COLOR = Color(hex: "f0f0f0")
+let CONTROL_BUTTON_COLOR = Color(hex: "d1d1d2")
 let LEFT_BUTTON_BACKGROUND_COLOR = Color(hex: "b5b5b5")
+let CONTROL_TEXT_COLOR = Color(hex: "5b5b5c")
 
 let VERTICAL_PADDING = (Double(CANVAS_HEIGHT) * SCALE - Double(CANVAS_HEIGHT)) / 2
 let HORIZONTAL_PADDING = (Double(CANVAS_WIDTH) * SCALE - Double(CANVAS_WIDTH)) / 2
@@ -42,13 +45,39 @@ enum PenSize {
     case small
 }
 
+enum Keyboard {
+    case lowercase
+    case uppercase
+    case accent
+    case japanese
+    case symbols
+    case emoji
+}
+
 struct SwiftUIView: View {
     @State private var grid: [[Int]] = Array(repeating: Array(repeating: 0, count: CANVAS_WIDTH), count: CANVAS_HEIGHT)
     @State private var lastTouchLocation: CGPoint? = nil
     @State private var penType = PenType.pen
     @State private var penSize = PenSize.big
+    @State private var keyboard = Keyboard.lowercase
     
     let conversation: MSConversation
+    let keyboards = [
+        Keyboard.lowercase: [
+            ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "-", "="],
+            ["SPACER", "q", "w", "e", "r", "t", "y", "u", "i", "o", "p", "BACKSPACE"],
+            ["CAPS", "a", "s", "d", "f", "g", "h", "j", "k", "l", "ENTER"],
+            ["SHIFT", "z", "x", "c", "v", "b", "n", "m", ",", ".", "/"],
+            [";", "'", "SPACE", "[", "]"]
+        ],
+        Keyboard.uppercase: [
+            ["!", "@", "#", "$", "%", "^", "&", "*", "(", ")", "_", "+"],
+            ["SPACER", "Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P", "BACKSPACE"],
+            ["CAPS", "A", "S", "D", "F", "G", "H", "J", "K", "L", "ENTER"],
+            ["SHIFT", "Z", "X", "C", "V", "B", "N", "M", "<", ">", "?"],
+            [":", "~", "SPACE", "{", "}"]
+        ]
+    ]
     
     var body: some View {
         // Whole view
@@ -75,12 +104,22 @@ struct SwiftUIView: View {
                     .padding(.trailing, modalPadding)
                     
                     // Keyboard and controls
+                    let currentKb = keyboards[keyboard] ?? keyboards[Keyboard.lowercase]!
                     HStack(spacing: 4) {
                         // Keyboard
-                        RoundedRectangle(cornerRadius: 0)
-                            .fill(KEYBOARD_BACKGROUND_COLOR)
-                            .frame(height: CONTROLS_HEIGHT)
-                            .roundedBorder(radius: CORNER_RADIUS * PIXEL_SIZE, borderLineWidth: PIXEL_SIZE, borderColor: DARK_BORDER_COLOR)
+                        VStack(spacing: 1) {
+                            ForEach(currentKb, id: \.self) { row in
+                                HStack(spacing: 1) {
+                                    ForEach(row, id: \.self) { glyph in
+                                        key(glyph: glyph)
+                                    }
+                                }
+                            }
+                        }
+                        .frame(height: CONTROLS_HEIGHT)
+                        .frame(maxWidth: .infinity)
+                        .background(KEYBOARD_BACKGROUND_COLOR)
+                        .roundedBorder(radius: CORNER_RADIUS * PIXEL_SIZE, borderLineWidth: PIXEL_SIZE, borderColor: DARK_BORDER_COLOR, insetColor: KEYBOARD_BACKGROUND_COLOR)
                         
                         // Right buttons
                         rightControls()
@@ -141,6 +180,50 @@ struct SwiftUIView: View {
         }
     }
     
+    private func key(glyph: String) -> some View {
+        let NORMAL_KEY_WIDTH = 23.0
+        
+        let keyWidth = glyph == "SPACER" ? floor(NORMAL_KEY_WIDTH / 2) : NORMAL_KEY_WIDTH * (Glyphs.controls[glyph] ?? 1)
+        let keyColor = glyph == "SPACER" ? .clear : Glyphs.controls[glyph] != nil ? CONTROL_BUTTON_COLOR : KEYBOARD_BUTTON_COLOR
+        let keyTextColor = glyph == "SPACER" ? .clear : Glyphs.controls[glyph] != nil ? CONTROL_TEXT_COLOR : .black
+        
+        let pixels = Glyphs.glyphPixels[glyph] ?? Glyphs.glyphPixels["A"]!
+        let adjustments = Glyphs.adjustments[glyph] ?? [0, 0]
+        let width = pixels[0].count
+        let height = pixels.count
+        let MAX_HEIGHT = 12
+        let BOTTOM_SPACE = 1
+        let yMod = MAX_HEIGHT - BOTTOM_SPACE - height + adjustments[1]
+        
+        return VStack(spacing: 0) {
+            Canvas(
+                opaque: false,
+                colorMode: .linear,
+                rendersAsynchronously: false
+            ) { context, size in
+                // Fill the canvas with a white background
+                context.fill(Path(CGRect(origin: .zero, size: size)), with: .color(keyColor))
+                for y in 0..<height {
+                    for x in 0..<width {
+                        if pixels[y][x] == 1 {
+                            context.fill(Path(CGRect(x: x, y: y + yMod, width: 1, height: 1)), with: .color(keyTextColor))
+                        }
+                    }
+                }
+            }
+            .frame(width: CGFloat(width), height: CGFloat(MAX_HEIGHT))
+            .scaleEffect(1.4)
+        }
+        .frame(maxHeight: .infinity)
+        .frame(width: keyWidth)
+        .background(keyColor)
+        .onTapGesture {
+            if glyph == "SHIFT" {
+                keyboard = keyboard == Keyboard.uppercase ? Keyboard.lowercase : Keyboard.uppercase
+            }
+        }
+    }
+    
     private func leftControls() -> some View {
         VStack(spacing: 0) {
             // Pen
@@ -168,19 +251,34 @@ struct SwiftUIView: View {
                 }
             Spacer()
             // Alphanumeric
-            leftButton()
+            leftButton(highlight: keyboard == Keyboard.lowercase || keyboard == Keyboard.uppercase)
+                .onTapGesture {
+                    keyboard = Keyboard.lowercase
+                }
             Spacer()
             // Accent
-            leftButton()
+            leftButton(highlight: keyboard == Keyboard.accent)
+                .onTapGesture {
+                    keyboard = Keyboard.accent
+                }
             Spacer()
             // Japanese
-            leftButton()
+            leftButton(highlight: keyboard == Keyboard.japanese)
+                .onTapGesture {
+                    keyboard = Keyboard.japanese
+                }
             Spacer()
             // Symbols
-            leftButton()
+            leftButton(highlight: keyboard == Keyboard.symbols)
+                .onTapGesture {
+                    keyboard = Keyboard.symbols
+                }
             Spacer()
             // Emoji
-            leftButton(bottom: true)
+            leftButton(highlight: keyboard == Keyboard.emoji, bottom: true)
+                .onTapGesture {
+                    keyboard = Keyboard.emoji
+                }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding(.top, PIXEL_SIZE)
