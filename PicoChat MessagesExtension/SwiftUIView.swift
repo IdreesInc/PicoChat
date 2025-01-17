@@ -61,6 +61,7 @@ struct SwiftUIView: View {
     @State private var penType = PenType.pen
     @State private var penSize = PenSize.big
     @State private var keyboard = Keyboard.lowercase
+    @State private var capsLock = false
     
     @State private var lastGlyphLocation = [NAME_WIDTH + 4 - 1, NOTEBOOK_LINE_SPACING - 3]
     
@@ -223,16 +224,33 @@ struct SwiftUIView: View {
         .onTapGesture {
             if glyph == "SHIFT" {
                 keyboard = keyboard == Keyboard.uppercase ? Keyboard.lowercase : Keyboard.uppercase
+                capsLock = false
+            } else if glyph == "CAPS" {
+                capsLock = !capsLock
+                if capsLock {
+                    keyboard = Keyboard.uppercase
+                } else {
+                    keyboard = Keyboard.lowercase
+                }
             } else {
+                var text = glyph
+                var textWidth = width
+                if (glyph == "SPACE") {
+                    text = " "
+                    textWidth = Glyphs.glyphPixels[" "]![0].count
+                }
                 var nextX = lastGlyphLocation[0] + 1
                 var nextY = lastGlyphLocation[1]
-                if (nextX + width >= CANVAS_WIDTH - 4) {
+                if (nextX + textWidth >= CANVAS_WIDTH - 4) {
                     nextX = 4
                     nextY += NOTEBOOK_LINE_SPACING
                 }
-                type(x: nextX, y: nextY, glyph: glyph)
-                lastGlyphLocation[0] = nextX + width
+                type(x: nextX, y: nextY, glyph: text)
+                lastGlyphLocation[0] = nextX + textWidth
                 lastGlyphLocation[1] = nextY
+                if keyboard == Keyboard.uppercase && !capsLock {
+                    keyboard = Keyboard.lowercase
+                }
             }
         }
     }
@@ -267,30 +285,35 @@ struct SwiftUIView: View {
             leftButton(highlight: keyboard == Keyboard.lowercase || keyboard == Keyboard.uppercase)
                 .onTapGesture {
                     keyboard = Keyboard.lowercase
+                    capsLock = false
                 }
             Spacer()
             // Accent
             leftButton(highlight: keyboard == Keyboard.accent)
                 .onTapGesture {
                     keyboard = Keyboard.accent
+                    capsLock = false
                 }
             Spacer()
             // Japanese
             leftButton(highlight: keyboard == Keyboard.japanese)
                 .onTapGesture {
                     keyboard = Keyboard.japanese
+                    capsLock = false
                 }
             Spacer()
             // Symbols
             leftButton(highlight: keyboard == Keyboard.symbols)
                 .onTapGesture {
                     keyboard = Keyboard.symbols
+                    capsLock = false
                 }
             Spacer()
             // Emoji
             leftButton(highlight: keyboard == Keyboard.emoji, bottom: true)
                 .onTapGesture {
                     keyboard = Keyboard.emoji
+                    capsLock = false
                 }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -432,8 +455,8 @@ struct SwiftUIView: View {
             view
             .padding(.top, 25)
             .padding(.bottom, 25)
-            .padding(.leading, 6)
-            .padding(.trailing, 6)
+            .padding(.leading, 7)
+            .padding(.trailing, 7)
         }
     }
     
