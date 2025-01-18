@@ -19,10 +19,12 @@ let SCALED_CANVAS_HEIGHT = Double(CANVAS_HEIGHT) * SCALE
 let PIXEL_SIZE = SCALE
 let CORNER_RADIUS = 6.0
 let CONTROLS_HEIGHT = SCALED_CANVAS_HEIGHT - PIXEL_SIZE * 5
+let STARTING_X = NAME_WIDTH + 4 - 1
+let STARTING_Y = NOTEBOOK_LINE_SPACING - 3
 
 let APP_BACKGROUND_COLOR = Color(hex: "f0f0f0")
-let HIGHLIGHT_COLOR = Color(hex: "0b155b")
-let HIGHLIGHT_LIGHT_COLOR = Color(hex: "b6ccff")
+//let colorTheme[2] = Color(hex: "0b155b")
+//let colorTheme[3] = Color(hex: "b6ccff")
 let BACKGROUND_COLOR = Color(hex: "fcfcfc")
 let MODAL_BACKGROUND_COLOR = Color(hex: "b3b3b3")
 let DARK_BORDER_COLOR = Color(hex: "666667")
@@ -35,6 +37,41 @@ let CONTROL_TEXT_COLOR = Color(hex: "5b5b5c")
 
 let VERTICAL_PADDING = (Double(CANVAS_HEIGHT) * SCALE - Double(CANVAS_HEIGHT)) / 2
 let HORIZONTAL_PADDING = (Double(CANVAS_WIDTH) * SCALE - Double(CANVAS_WIDTH)) / 2
+
+let COLORS = [
+    // Grey
+    [Color(hex: "303851"), Color(hex: "415969"), Color(hex: "697182"), Color(hex: "b2c3db")],
+    // Brown
+    [Color(hex: "692800"), Color(hex: "923800"), Color(hex: "aa5928"), Color(hex: "ebba9a")],
+    // Red
+    [Color(hex: "8a0008"), Color(hex: "fb0000"), Color(hex: "fb3041"), Color(hex: "fbbaba")],
+    // Pink
+    [Color(hex: "793059"), Color(hex: "eb30eb"), Color(hex: "e382eb"), Color(hex: "fbcbfb")],
+    // Orange
+    [Color(hex: "8a4900"), Color(hex: "fb6900"), Color(hex: "fb8208"), Color(hex: "fbdb92")],
+    // Yellow
+    [Color(hex: "494900"), Color(hex: "e3ba00"), Color(hex: "fbcb20"), Color(hex: "fbfb71")],
+    // Lime Green
+    [Color(hex: "103800"), Color(hex: "69a200"), Color(hex: "92d300"), Color(hex: "c3fb71")],
+    // Green
+    [Color(hex: "005100"), Color(hex: "00c300"), Color(hex: "18f318"), Color(hex: "bafbaa")],
+    // Forest Green
+    [Color(hex: "005100"), Color(hex: "008a30"), Color(hex: "20aa49"), Color(hex: "9aeb9a")],
+    // Tealish Green
+    [Color(hex: "185130"), Color(hex: "38c39a"), Color(hex: "61d38a"), Color(hex: "b2fbdb")],
+    // Greyish Blue
+    [Color(hex: "104969"), Color(hex: "289acb"), Color(hex: "61b2db"), Color(hex: "d3f3fb")],
+    // Blue
+    [Color(hex: "002069"), Color(hex: "0049cb"), Color(hex: "2869e3"), Color(hex: "bacbfb")],
+    // Dark Blue
+    [Color(hex: "002069"), Color(hex: "00008a"), Color(hex: "2869e3"), Color(hex: "bacbfb")],
+    // Grape
+    [Color(hex: "410061"), Color(hex: "6900a2"), Color(hex: "5151aa"), Color(hex: "babaf3")],
+    // Purpleish Pink
+    [Color(hex: "79008a"), Color(hex: "ba00d3"), Color(hex: "e341f3"), Color(hex: "fbaaf3")],
+    // Magenta
+    [Color(hex: "79008a"), Color(hex: "fb0071"), Color(hex: "fb41aa"), Color(hex: "fbdbf3")],
+]
 
 enum PenType {
     case pen
@@ -62,8 +99,9 @@ struct SwiftUIView: View {
     @State private var penSize = PenSize.big
     @State private var keyboard = Keyboard.lowercase
     @State private var capsLock = false
+    @State private var colorTheme = COLORS[Int.random(in: 0..<COLORS.count)]
     
-    @State private var lastGlyphLocation = [NAME_WIDTH + 4 - 1, NOTEBOOK_LINE_SPACING - 3]
+    @State private var lastGlyphLocation = [STARTING_X, STARTING_Y]
     
     let conversation: MSConversation
     let keyboards = [
@@ -182,6 +220,7 @@ struct SwiftUIView: View {
                 grid[y][x] = 0
             }
         }
+        lastGlyphLocation = [STARTING_X, STARTING_Y]
     }
     
     private func key(glyph: String) -> some View {
@@ -330,8 +369,8 @@ struct SwiftUIView: View {
         ZStack {
         }
         .frame(width: 22, height: 22)
-        .background(highlight ? HIGHLIGHT_LIGHT_COLOR : LEFT_BUTTON_BACKGROUND_COLOR)
-        .roundedBorder(radius: 4, borderLineWidth: PIXEL_SIZE, borderColor: highlight ? HIGHLIGHT_LIGHT_COLOR : LEFT_BUTTON_BACKGROUND_COLOR, insetColor: nil, topLeft: top, topRight: false, bottomLeft: bottom, bottomRight: false)
+        .background(highlight ? colorTheme[2] : LEFT_BUTTON_BACKGROUND_COLOR)
+        .roundedBorder(radius: 4, borderLineWidth: PIXEL_SIZE, borderColor: highlight ? colorTheme[2] : LEFT_BUTTON_BACKGROUND_COLOR, insetColor: nil, topLeft: top, topRight: false, bottomLeft: bottom, bottomRight: false)
     }
     
     private func rightControls() -> some View {
@@ -373,7 +412,7 @@ struct SwiftUIView: View {
                     context.stroke(Path { path in
                         path.move(to: CGPoint(x: 0, y: y))
                         path.addLine(to: CGPoint(x: CANVAS_WIDTH, y: y))
-                    }, with: .color(HIGHLIGHT_LIGHT_COLOR), lineWidth: 1)
+                    }, with: .color(colorTheme[3]), lineWidth: 1)
                 }
             }
             // Draw each pixel
@@ -386,7 +425,7 @@ struct SwiftUIView: View {
             }
         }
         .frame(width: CGFloat(CANVAS_WIDTH), height: CGFloat(CANVAS_HEIGHT))
-        .roundedBorder(radius: CORNER_RADIUS, borderLineWidth: 1, borderColor: .white, insetColor: HIGHLIGHT_COLOR, name: true)
+        .roundedBorder(radius: CORNER_RADIUS, borderLineWidth: 1, borderColor: .white, insetColor: colorTheme[2], nameColor: colorTheme[3])
         .applyIf(interactive) { view in
             view.gesture(
                 DragGesture(minimumDistance: 0, coordinateSpace: .local)
@@ -495,8 +534,8 @@ extension View {
 }
 
 extension View {
-    func roundedBorder(radius: CGFloat, borderLineWidth: CGFloat = 1, borderColor: Color = .gray, insetColor: Color? = nil, name: Bool = false, topLeft: Bool = true, topRight: Bool = true, bottomLeft: Bool = true, bottomRight: Bool = true) -> some View {
-        modifier(ModifierRoundedBorder(radius: radius, borderLineWidth: borderLineWidth, borderColor: borderColor, insetColor: insetColor, name: name, topLeft: topLeft, topRight: topRight, bottomLeft: bottomLeft, bottomRight: bottomRight))
+    func roundedBorder(radius: CGFloat, borderLineWidth: CGFloat = 1, borderColor: Color = .gray, insetColor: Color? = nil, nameColor: Color? = nil, topLeft: Bool = true, topRight: Bool = true, bottomLeft: Bool = true, bottomRight: Bool = true) -> some View {
+        modifier(ModifierRoundedBorder(radius: radius, borderLineWidth: borderLineWidth, borderColor: borderColor, insetColor: insetColor, nameColor: nameColor, topLeft: topLeft, topRight: topRight, bottomLeft: bottomLeft, bottomRight: bottomRight))
     }
 }
 
@@ -505,7 +544,7 @@ fileprivate struct ModifierRoundedBorder: ViewModifier {
     var borderLineWidth: CGFloat = 1
     var borderColor: Color = .gray
     var insetColor: Color?
-    var name: Bool = false
+    var nameColor: Color?
     var antialiased: Bool = true
     var topLeft: Bool
     var topRight: Bool
@@ -543,18 +582,18 @@ fileprivate struct ModifierRoundedBorder: ViewModifier {
                         .inset(by: self.borderLineWidth)
                         .strokeBorder(self.insetColor!, lineWidth: self.borderLineWidth, antialiased: self.antialiased)
                     }
-                    if name {
+                    if nameColor != nil {
                         UnevenRoundedRectangle(cornerRadii: .init(
                             topLeading: self.radius,
                             bottomTrailing: self.radius), style: .continuous)
                         .inset(by: self.borderLineWidth)
                         .frame(width: 59, height: CGFloat(NOTEBOOK_LINE_SPACING) + 1)
-                        .foregroundStyle(HIGHLIGHT_LIGHT_COLOR)
+                        .foregroundStyle(nameColor!)
                         UnevenRoundedRectangle(cornerRadii: .init(
                             topLeading: self.radius,
                             bottomTrailing: self.radius), style: .continuous)
                         .inset(by: self.borderLineWidth)
-                        .strokeBorder(HIGHLIGHT_COLOR, lineWidth: self.borderLineWidth, antialiased: self.antialiased)
+                        .strokeBorder(insetColor!, lineWidth: self.borderLineWidth, antialiased: self.antialiased)
                         .frame(width: CGFloat(NAME_WIDTH), height: CGFloat(NOTEBOOK_LINE_SPACING) + 1)
                     }
                 }
