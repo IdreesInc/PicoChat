@@ -36,6 +36,8 @@ let CONTROL_TEXT_COLOR = Color(hex: "5b5b5c")
 let VERTICAL_PADDING = (Double(CANVAS_HEIGHT) * SCALE - Double(CANVAS_HEIGHT)) / 2
 let HORIZONTAL_PADDING = (Double(CANVAS_WIDTH) * SCALE - Double(CANVAS_WIDTH)) / 2
 
+let MAX_SNAPSHOTS = 50
+
 let COLORS = [
     ColorTheme([Color(hex: "#B2C3DB"), Color(hex: "#415969"), Color(hex: "#697182"), Color(hex: "#303851"), Color(hex: "#28518A"), Color(hex: "#828AC3"), Color(hex: "#9A9AB2")]),
     ColorTheme([Color(hex: "#EBBA9A"), Color(hex: "#923800"), Color(hex: "#AA5928"), Color(hex: "#692800"), Color(hex: "#BA5110"), Color(hex: "#FBBA82"), Color(hex: "#FBA269")]),
@@ -53,7 +55,6 @@ let COLORS = [
     ColorTheme([Color(hex: "#DBBAFB"), Color(hex: "#6900A2"), Color(hex: "#9A41CB"), Color(hex: "#410061"), Color(hex: "#8A00D3"), Color(hex: "#EBBAFB"), Color(hex: "#E39AFB")]),
     ColorTheme([Color(hex: "#FBAAF3"), Color(hex: "#BA00D3"), Color(hex: "#E341F3"), Color(hex: "#79008A"), Color(hex: "#EB00C3"), Color(hex: "#FBC3EB"), Color(hex: "#FBB2FB")]),
     ColorTheme([Color(hex: "#FBDBF3"), Color(hex: "#FB0071"), Color(hex: "#FB41AA"), Color(hex: "#79008A"), Color(hex: "#EB00C3"), Color(hex: "#FBC3EB"), Color(hex: "#FBB2FB")]),
-
 ]
 
 struct ColorTheme {
@@ -74,6 +75,11 @@ struct ColorTheme {
         controlPressedBackground = colors[5]
         keyPressedBackground = colors[6]
     }
+}
+
+struct Snapshot {
+    var grid: [[Int]]
+    var lastGlyphLocation: [Int]
 }
 
 enum PenType {
@@ -105,6 +111,10 @@ struct SwiftUIView: View {
     @State private var colorTheme = COLORS[Int.random(in: 0..<COLORS.count)]
     @State private var lastGlyphLocation = [STARTING_X, STARTING_Y]
     @State private var heldGlyph: String? = nil
+    @State private var drawing = false
+    
+    // TODO: File system serde
+    @State private var snapshots = [Snapshot]()
     
     let conversation: MSConversation
     let keyboards = [
@@ -187,6 +197,7 @@ struct SwiftUIView: View {
     }
     
     private func send() {
+        takeSnapshot()
         let renderer = ImageRenderer(content: chatCanvas(interactive: false))
         renderer.scale = 5
         if let image = renderer.uiImage {
@@ -281,7 +292,6 @@ struct SwiftUIView: View {
         .frame(maxHeight: .infinity)
         .frame(width: keyWidth)
         .background(keyBgColor)
-        // Drag gesture
         .gesture(
             DragGesture(minimumDistance: 0)
                 .onChanged { value in
@@ -304,6 +314,8 @@ struct SwiftUIView: View {
                     } else if glyph == "ENTER" {
                         lastGlyphLocation[0] = HORIZONTAL_MARGIN - 1
                         lastGlyphLocation[1] += NOTEBOOK_LINE_SPACING
+                    } else if glyph == "BACKSPACE" {
+                        loadSnapshot()
                     } else {
                         var text = glyph
                         var textWidth = width
@@ -460,6 +472,10 @@ struct SwiftUIView: View {
             view.gesture(
                 DragGesture(minimumDistance: 0, coordinateSpace: .local)
                     .onChanged { value in
+                        if !drawing {
+                            takeSnapshot()
+                            drawing = true
+                        }
                         let ink = penType == PenType.eraser ? 0 : 1
                         if value.location.x >= 0 && value.location.x < CGFloat(CANVAS_WIDTH) && value.location.y >= 0 && value.location.y < CGFloat(CANVAS_HEIGHT) {
                             draw(x: Int(value.location.x), y: Int(value.location.y), value: ink)
@@ -515,7 +531,7 @@ struct SwiftUIView: View {
                     }
                     .onEnded { _ in
                         lastTouchLocation = nil
-                        print("Touch ended")
+                        drawing = false
                     }
             )
             .padding(.top, VERTICAL_PADDING)
@@ -540,6 +556,8 @@ struct SwiftUIView: View {
     }
     
     func type(x: Int, y: Int, glyph: String) {
+        takeSnapshot()
+
         let pixels = Glyphs.glyphPixels[glyph] ?? Glyphs.glyphPixels["A"]!
         let adjustments = Glyphs.adjustments[glyph] ?? [0, 0]
         let width = pixels[0].count
@@ -551,7 +569,31 @@ struct SwiftUIView: View {
             }
         }
     }
-        
+    
+    func takeSnapshot() {
+        print("Taking snapshot...")
+        // Cloning arrays in Swift is weird
+        let gridClone = grid.map { $0.map { $0 } }
+        let lastGlyphLocationClone = lastGlyphLocation.map { $0 }
+        snapshots.append(Snapshot(grid: gridClone, lastGlyphLocation: lastGlyphLocationClone))
+        if snapshots.count > MAX_SNAPSHOTS {
+            snapshots.removeFirst()
+        }
+        print("Snapshots: \(snapshots.count)")
+    }
+    
+    func loadSnapshot() {
+        print("Loading snapshot...")
+        if let snapshot = snapshots.popLast() {
+            let gridClone = snapshot.grid.map { $0.map { $0 } }
+            let lastGlyphLocationClone = snapshot.lastGlyphLocation.map { $0 }
+            grid = gridClone
+            lastGlyphLocation = lastGlyphLocationClone
+            print("Snapshots: \(snapshots.count)")
+        } else {
+            print("No snapshot to load")
+        }
+    }
 }
 
 // Extensions
