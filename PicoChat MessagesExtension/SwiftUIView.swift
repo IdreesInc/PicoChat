@@ -23,8 +23,6 @@ let STARTING_X = NAME_WIDTH + 4 - 1
 let STARTING_Y = NOTEBOOK_LINE_SPACING - 3
 
 let APP_BACKGROUND_COLOR = Color(hex: "f0f0f0")
-//let colorTheme[2] = Color(hex: "0b155b")
-//let colorTheme[3] = Color(hex: "b6ccff")
 let BACKGROUND_COLOR = Color(hex: "fcfcfc")
 let MODAL_BACKGROUND_COLOR = Color(hex: "b3b3b3")
 let DARK_BORDER_COLOR = Color(hex: "666667")
@@ -39,39 +37,43 @@ let VERTICAL_PADDING = (Double(CANVAS_HEIGHT) * SCALE - Double(CANVAS_HEIGHT)) /
 let HORIZONTAL_PADDING = (Double(CANVAS_WIDTH) * SCALE - Double(CANVAS_WIDTH)) / 2
 
 let COLORS = [
-    // Grey
-    [Color(hex: "303851"), Color(hex: "415969"), Color(hex: "697182"), Color(hex: "b2c3db")],
-    // Brown
-    [Color(hex: "692800"), Color(hex: "923800"), Color(hex: "aa5928"), Color(hex: "ebba9a")],
-    // Red
-    [Color(hex: "8a0008"), Color(hex: "fb0000"), Color(hex: "fb3041"), Color(hex: "fbbaba")],
-    // Pink
-    [Color(hex: "793059"), Color(hex: "eb30eb"), Color(hex: "e382eb"), Color(hex: "fbcbfb")],
-    // Orange
-    [Color(hex: "8a4900"), Color(hex: "fb6900"), Color(hex: "fb8208"), Color(hex: "fbdb92")],
-    // Yellow
-    [Color(hex: "494900"), Color(hex: "e3ba00"), Color(hex: "fbcb20"), Color(hex: "fbfb71")],
-    // Lime Green
-    [Color(hex: "103800"), Color(hex: "69a200"), Color(hex: "92d300"), Color(hex: "c3fb71")],
-    // Green
-    [Color(hex: "005100"), Color(hex: "00c300"), Color(hex: "18f318"), Color(hex: "bafbaa")],
-    // Forest Green
-    [Color(hex: "005100"), Color(hex: "008a30"), Color(hex: "20aa49"), Color(hex: "9aeb9a")],
-    // Tealish Green
-    [Color(hex: "185130"), Color(hex: "38c39a"), Color(hex: "61d38a"), Color(hex: "b2fbdb")],
-    // Greyish Blue
-    [Color(hex: "104969"), Color(hex: "289acb"), Color(hex: "61b2db"), Color(hex: "d3f3fb")],
-    // Blue
-    [Color(hex: "002069"), Color(hex: "0049cb"), Color(hex: "2869e3"), Color(hex: "bacbfb")],
-    // Dark Blue
-    [Color(hex: "002069"), Color(hex: "00008a"), Color(hex: "2869e3"), Color(hex: "bacbfb")],
-    // Grape
-    [Color(hex: "410061"), Color(hex: "6900a2"), Color(hex: "5151aa"), Color(hex: "babaf3")],
-    // Purpleish Pink
-    [Color(hex: "79008a"), Color(hex: "ba00d3"), Color(hex: "e341f3"), Color(hex: "fbaaf3")],
-    // Magenta
-    [Color(hex: "79008a"), Color(hex: "fb0071"), Color(hex: "fb41aa"), Color(hex: "fbdbf3")],
+    ColorTheme([Color(hex: "#9AEB9A"), Color(hex: "#008A30"), Color(hex: "#20AA49"), Color(hex: "#005100"), Color(hex: "#009A69"), Color(hex: "#AAF3BA"), Color(hex: "#9AEB9A")]),
+    ColorTheme([Color(hex: "#B2C3DB"), Color(hex: "#415969"), Color(hex: "#697182"), Color(hex: "#303851"), Color(hex: "#28518A"), Color(hex: "#828AC3"), Color(hex: "#9A9AB2")]),
+    ColorTheme([Color(hex: "#B2FBDB"), Color(hex: "#38C39A"), Color(hex: "#61D38A"), Color(hex: "#185130"), Color(hex: "#009A69"), Color(hex: "#AAF3BA"), Color(hex: "#9AEB9A")]),
+    ColorTheme([Color(hex: "#BABAF3"), Color(hex: "#00008A"), Color(hex: "#5151AA"), Color(hex: "#002069"), Color(hex: "#0069FB"), Color(hex: "#B2D3EB"), Color(hex: "#9ADBFB")]),
+    ColorTheme([Color(hex: "#BACBFB"), Color(hex: "#0049CB"), Color(hex: "#2869E3"), Color(hex: "#002069"), Color(hex: "#0069FB"), Color(hex: "#B2D3EB"), Color(hex: "#9ADBFB")]),
+    ColorTheme([Color(hex: "#BAFBAA"), Color(hex: "#00C300"), Color(hex: "#18F318"), Color(hex: "#005100"), Color(hex: "#009A69"), Color(hex: "#AAF3BA"), Color(hex: "#9AEB9A")]),
+    ColorTheme([Color(hex: "#C3FB71"), Color(hex: "#69A200"), Color(hex: "#92D300"), Color(hex: "#103800"), Color(hex: "#69A208"), Color(hex: "#BAFB79"), Color(hex: "#AAFB61")]),
+    ColorTheme([Color(hex: "#D3F3FB"), Color(hex: "#289ACB"), Color(hex: "#61B2DB"), Color(hex: "#104969"), Color(hex: "#0069FB"), Color(hex: "#B2D3EB"), Color(hex: "#9ADBFB")]),
+    ColorTheme([Color(hex: "#DBBAFB"), Color(hex: "#6900A2"), Color(hex: "#9A41CB"), Color(hex: "#410061"), Color(hex: "#8A00D3"), Color(hex: "#EBBAFB"), Color(hex: "#E39AFB")]),
+    ColorTheme([Color(hex: "#EBBA9A"), Color(hex: "#923800"), Color(hex: "#AA5928"), Color(hex: "#692800"), Color(hex: "#BA5110"), Color(hex: "#FBBA82"), Color(hex: "#FBA269")]),
+    ColorTheme([Color(hex: "#FBAAF3"), Color(hex: "#BA00D3"), Color(hex: "#E341F3"), Color(hex: "#79008A"), Color(hex: "#EB00C3"), Color(hex: "#FBC3EB"), Color(hex: "#FBB2FB")]),
+    ColorTheme([Color(hex: "#FBBABA"), Color(hex: "#FB0000"), Color(hex: "#FB3041"), Color(hex: "#8A0008"), Color(hex: "#FB3849"), Color(hex: "#FB9AA2"), Color(hex: "#F3A2A2")]),
+    ColorTheme([Color(hex: "#FBCBFB"), Color(hex: "#EB30EB"), Color(hex: "#E382EB"), Color(hex: "#793059"), Color(hex: "#EB00C3"), Color(hex: "#FBC3EB"), Color(hex: "#FBB2FB")]),
+    ColorTheme([Color(hex: "#FBDB92"), Color(hex: "#FB6900"), Color(hex: "#FB8208"), Color(hex: "#8A4900"), Color(hex: "#FB8230"), Color(hex: "#FBFB41"), Color(hex: "#FBFB79")]),
+    ColorTheme([Color(hex: "#FBDBF3"), Color(hex: "#FB0071"), Color(hex: "#FB41AA"), Color(hex: "#79008A"), Color(hex: "#EB00C3"), Color(hex: "#FBC3EB"), Color(hex: "#FBB2FB")]),
+    ColorTheme([Color(hex: "#FBFBFB"), Color(hex: "#FBFBFB"), Color(hex: "#FBFBFB"), Color(hex: "#FBFBFB"), Color(hex: "#EBEBEB"), Color(hex: "#EBEBEB"), Color(hex: "#EBEBEB")]),
 ]
+
+struct ColorTheme {
+    var background: Color
+    var border: Color
+    var leftBackground: Color
+    var leftStroke: Color
+    var keyPressedText: Color
+    var controlPressedBackground: Color
+    var keyPressedBackground: Color
+    
+    init(_ colors: [Color]) {
+        background = colors[0]
+        border = colors[1]
+        leftBackground = colors[2]
+        leftStroke = colors[3]
+        keyPressedText = colors[4]
+        controlPressedBackground = colors[5]
+        keyPressedBackground = colors[6]
+    }
+}
 
 enum PenType {
     case pen
@@ -226,9 +228,9 @@ struct SwiftUIView: View {
     private func key(glyph: String) -> some View {
         let NORMAL_KEY_WIDTH = 23.0
         
-        let keyWidth = glyph == "SPACER" ? floor(NORMAL_KEY_WIDTH / 2) : NORMAL_KEY_WIDTH * (Glyphs.controls[glyph] ?? 1)
-        let keyColor = glyph == "SPACER" ? .clear : Glyphs.controls[glyph] != nil ? CONTROL_BUTTON_COLOR : KEYBOARD_BUTTON_COLOR
-        let keyTextColor = glyph == "SPACER" ? .clear : Glyphs.controls[glyph] != nil ? CONTROL_TEXT_COLOR : .black
+        var keyWidth = NORMAL_KEY_WIDTH * (Glyphs.controls[glyph] ?? 1)
+        var keyBgColor = Glyphs.controls[glyph] != nil ? CONTROL_BUTTON_COLOR : KEYBOARD_BUTTON_COLOR
+        var keyTextColor = Glyphs.controls[glyph] != nil ? CONTROL_TEXT_COLOR : .black
         
         let pixels = Glyphs.glyphPixels[glyph] ?? Glyphs.glyphPixels["A"]!
         let adjustments = Glyphs.adjustments[glyph] ?? [0, 0]
@@ -238,6 +240,15 @@ struct SwiftUIView: View {
         let BOTTOM_SPACE = 1
         let yMod = MAX_HEIGHT - BOTTOM_SPACE - height + adjustments[1]
         
+        if glyph == "SPACER" {
+            keyWidth = floor(NORMAL_KEY_WIDTH / 2)
+            keyBgColor = .clear
+            keyTextColor = .clear
+        } else if glyph == "CAPS" {
+            keyBgColor = capsLock ? colorTheme.controlPressedBackground : keyBgColor
+            keyTextColor = capsLock ? colorTheme.keyPressedText : keyTextColor
+        }
+        
         return VStack(spacing: 0) {
             Canvas(
                 opaque: false,
@@ -245,7 +256,7 @@ struct SwiftUIView: View {
                 rendersAsynchronously: false
             ) { context, size in
                 // Fill the canvas with a white background
-                context.fill(Path(CGRect(origin: .zero, size: size)), with: .color(keyColor))
+                context.fill(Path(CGRect(origin: .zero, size: size)), with: .color(keyBgColor))
                 for y in 0..<height {
                     for x in 0..<width {
                         if pixels[y][x] == 1 {
@@ -259,7 +270,7 @@ struct SwiftUIView: View {
         }
         .frame(maxHeight: .infinity)
         .frame(width: keyWidth)
-        .background(keyColor)
+        .background(keyBgColor)
         .onTapGesture {
             let HORIZONTAL_MARGIN = 5
             if glyph == "SHIFT" {
@@ -369,8 +380,8 @@ struct SwiftUIView: View {
         ZStack {
         }
         .frame(width: 22, height: 22)
-        .background(highlight ? colorTheme[2] : LEFT_BUTTON_BACKGROUND_COLOR)
-        .roundedBorder(radius: 4, borderLineWidth: PIXEL_SIZE, borderColor: highlight ? colorTheme[2] : LEFT_BUTTON_BACKGROUND_COLOR, insetColor: nil, topLeft: top, topRight: false, bottomLeft: bottom, bottomRight: false)
+        .background(highlight ? colorTheme.leftBackground : LEFT_BUTTON_BACKGROUND_COLOR)
+        .roundedBorder(radius: 4, borderLineWidth: PIXEL_SIZE, borderColor: highlight ? colorTheme.leftBackground : LEFT_BUTTON_BACKGROUND_COLOR, insetColor: nil, topLeft: top, topRight: false, bottomLeft: bottom, bottomRight: false)
     }
     
     private func rightControls() -> some View {
@@ -412,7 +423,7 @@ struct SwiftUIView: View {
                     context.stroke(Path { path in
                         path.move(to: CGPoint(x: 0, y: y))
                         path.addLine(to: CGPoint(x: CANVAS_WIDTH, y: y))
-                    }, with: .color(colorTheme[3]), lineWidth: 1)
+                    }, with: .color(colorTheme.background), lineWidth: 1)
                 }
             }
             // Draw each pixel
@@ -425,7 +436,7 @@ struct SwiftUIView: View {
             }
         }
         .frame(width: CGFloat(CANVAS_WIDTH), height: CGFloat(CANVAS_HEIGHT))
-        .roundedBorder(radius: CORNER_RADIUS, borderLineWidth: 1, borderColor: .white, insetColor: colorTheme[2], nameColor: colorTheme[3])
+        .roundedBorder(radius: CORNER_RADIUS, borderLineWidth: 1, borderColor: .white, insetColor: colorTheme.border, nameColor: colorTheme.background)
         .applyIf(interactive) { view in
             view.gesture(
                 DragGesture(minimumDistance: 0, coordinateSpace: .local)
@@ -603,7 +614,10 @@ fileprivate struct ModifierRoundedBorder: ViewModifier {
 
 extension Color {
     init(hex: String) {
-        let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
+        var hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
+        if hex.hasPrefix("#") {
+            hex.removeFirst()
+        }
         var int: UInt64 = 0
         Scanner(string: hex).scanHexInt64(&int)
         let a, r, g, b: UInt64
