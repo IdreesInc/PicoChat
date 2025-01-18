@@ -103,8 +103,8 @@ struct SwiftUIView: View {
     @State private var keyboard = Keyboard.lowercase
     @State private var capsLock = false
     @State private var colorTheme = COLORS[Int.random(in: 0..<COLORS.count)]
-    
     @State private var lastGlyphLocation = [STARTING_X, STARTING_Y]
+    @State private var heldGlyph: String? = nil
     
     let conversation: MSConversation
     let keyboards = [
@@ -228,10 +228,10 @@ struct SwiftUIView: View {
     
     private func key(glyph: String) -> some View {
         let NORMAL_KEY_WIDTH = 23.0
-        
+        let isControl = Glyphs.controls[glyph] != nil
         var keyWidth = NORMAL_KEY_WIDTH * (Glyphs.controls[glyph] ?? 1)
-        var keyBgColor = Glyphs.controls[glyph] != nil ? CONTROL_BUTTON_COLOR : KEYBOARD_BUTTON_COLOR
-        var keyTextColor = Glyphs.controls[glyph] != nil ? CONTROL_TEXT_COLOR : .black
+        var keyBgColor = isControl ? CONTROL_BUTTON_COLOR : KEYBOARD_BUTTON_COLOR
+        var keyTextColor = isControl ? CONTROL_TEXT_COLOR : .black
         
         let pixels = Glyphs.glyphPixels[glyph] ?? Glyphs.glyphPixels["A"]!
         let adjustments = Glyphs.adjustments[glyph] ?? [0, 0]
@@ -248,6 +248,15 @@ struct SwiftUIView: View {
         } else if glyph == "CAPS" {
             keyBgColor = capsLock ? colorTheme.controlPressedBackground : keyBgColor
             keyTextColor = capsLock ? colorTheme.keyPressedText : keyTextColor
+        }
+        
+        if glyph == heldGlyph {
+            if isControl {
+                keyBgColor = colorTheme.controlPressedBackground
+            } else {
+                keyBgColor = colorTheme.keyPressedBackground
+            }
+            keyTextColor = colorTheme.keyPressedText
         }
         
         return VStack(spacing: 0) {
@@ -272,42 +281,51 @@ struct SwiftUIView: View {
         .frame(maxHeight: .infinity)
         .frame(width: keyWidth)
         .background(keyBgColor)
-        .onTapGesture {
-            let HORIZONTAL_MARGIN = 5
-            if glyph == "SHIFT" {
-                keyboard = keyboard == Keyboard.uppercase ? Keyboard.lowercase : Keyboard.uppercase
-                capsLock = false
-            } else if glyph == "CAPS" {
-                capsLock = !capsLock
-                if capsLock {
-                    keyboard = Keyboard.uppercase
-                } else {
-                    keyboard = Keyboard.lowercase
+        // Drag gesture
+        .gesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { value in
+                    heldGlyph = glyph
                 }
-            } else if glyph == "ENTER" {
-                lastGlyphLocation[0] = HORIZONTAL_MARGIN - 1
-                lastGlyphLocation[1] += NOTEBOOK_LINE_SPACING
-            } else {
-                var text = glyph
-                var textWidth = width
-                if (glyph == "SPACE") {
-                    text = " "
-                    textWidth = Glyphs.glyphPixels[" "]![0].count
+                .onEnded { _ in
+                    heldGlyph = nil
+                    
+                    let HORIZONTAL_MARGIN = 5
+                    if glyph == "SHIFT" {
+                        keyboard = keyboard == Keyboard.uppercase ? Keyboard.lowercase : Keyboard.uppercase
+                        capsLock = false
+                    } else if glyph == "CAPS" {
+                        capsLock = !capsLock
+                        if capsLock {
+                            keyboard = Keyboard.uppercase
+                        } else {
+                            keyboard = Keyboard.lowercase
+                        }
+                    } else if glyph == "ENTER" {
+                        lastGlyphLocation[0] = HORIZONTAL_MARGIN - 1
+                        lastGlyphLocation[1] += NOTEBOOK_LINE_SPACING
+                    } else {
+                        var text = glyph
+                        var textWidth = width
+                        if (glyph == "SPACE") {
+                            text = " "
+                            textWidth = Glyphs.glyphPixels[" "]![0].count
+                        }
+                        var nextX = lastGlyphLocation[0] + 1
+                        var nextY = lastGlyphLocation[1]
+                        if (nextX + textWidth >= CANVAS_WIDTH - HORIZONTAL_MARGIN) {
+                            nextX = HORIZONTAL_MARGIN
+                            nextY += NOTEBOOK_LINE_SPACING
+                        }
+                        type(x: nextX, y: nextY, glyph: text)
+                        lastGlyphLocation[0] = nextX + textWidth
+                        lastGlyphLocation[1] = nextY
+                        if keyboard == Keyboard.uppercase && !capsLock {
+                            keyboard = Keyboard.lowercase
+                        }
+                    }
                 }
-                var nextX = lastGlyphLocation[0] + 1
-                var nextY = lastGlyphLocation[1]
-                if (nextX + textWidth >= CANVAS_WIDTH - HORIZONTAL_MARGIN) {
-                    nextX = HORIZONTAL_MARGIN
-                    nextY += NOTEBOOK_LINE_SPACING
-                }
-                type(x: nextX, y: nextY, glyph: text)
-                lastGlyphLocation[0] = nextX + textWidth
-                lastGlyphLocation[1] = nextY
-                if keyboard == Keyboard.uppercase && !capsLock {
-                    keyboard = Keyboard.lowercase
-                }
-            }
-        }
+        )
     }
     
     private func leftControls() -> some View {
