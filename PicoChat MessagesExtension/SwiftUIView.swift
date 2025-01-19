@@ -30,7 +30,10 @@ let RIGHT_BUTTON_COLOR = Color(hex: "e3e3e3")
 let KEYBOARD_BACKGROUND_COLOR = Color(hex: "fcfcfd")
 let KEYBOARD_BUTTON_COLOR = Color(hex: "f0f0f0")
 let CONTROL_BUTTON_COLOR = Color(hex: "d1d1d2")
+let LEFT_BUTTON_STROKE_COLOR = Color(hex: "535353")
+let LEFT_BUTTON_SHADOW_COLOR = Color(hex: "6c6c6c")
 let LEFT_BUTTON_BACKGROUND_COLOR = Color(hex: "b5b5b5")
+let LEFT_BUTTON_HIGHLIGHT_MIX_COLOR = Color(hex: "dbdbdb")
 let CONTROL_TEXT_COLOR = Color(hex: "5b5b5c")
 
 let VERTICAL_PADDING = (Double(CANVAS_HEIGHT) * SCALE - Double(CANVAS_HEIGHT)) / 2
@@ -112,9 +115,10 @@ enum Keyboard {
     case lowercase
     case uppercase
     case accent
-    case japanese
+//    case japanese
     case symbols
     case emoji
+    case extra
 }
 
 struct SwiftUIView: View {
@@ -374,7 +378,7 @@ struct SwiftUIView: View {
         var keyBgColor = isControl ? CONTROL_BUTTON_COLOR : KEYBOARD_BUTTON_COLOR
         var keyTextColor = isControl ? CONTROL_TEXT_COLOR : .black
         
-        let pixels = Glyphs.glyphPixels[glyph] ?? Glyphs.glyphPixels["A"]!
+        let pixels = Glyphs.glyphPixels[glyph] ?? Glyphs.glyphPixels["?"]!
         let adjustments = Glyphs.adjustments[glyph] ?? [0, 0]
         let width = pixels[0].count
         let height = pixels.count
@@ -495,63 +499,64 @@ struct SwiftUIView: View {
     private func leftControls() -> some View {
         VStack(spacing: 0) {
             // Pen
-            leftButton(highlight: penType == PenType.pen, top: true)
+            leftButton(icon: "PEN", highlight: penType == PenType.pen, top: true)
                 .onTapGesture {
                     penType = PenType.pen
                 }
             Spacer()
             // Eraser
-            leftButton(highlight: penType == PenType.eraser)
+            leftButton(icon: "ERASER", highlight: penType == PenType.eraser)
                 .onTapGesture {
                     penType = PenType.eraser
                 }
             Spacer()
             // Big pen
-            leftButton(highlight: penSize == PenSize.big)
+            leftButton(icon: "BIG_PEN", highlight: penSize == PenSize.big)
                 .onTapGesture {
                     penSize = PenSize.big
                 }
             Spacer()
             // Small pen
-            leftButton(highlight: penSize == PenSize.small)
+            leftButton(icon: "SMALL_PEN", highlight: penSize == PenSize.small)
                 .onTapGesture {
                     penSize = PenSize.small
                 }
             Spacer()
             // Alphanumeric
-            leftButton(highlight: keyboard == Keyboard.lowercase || keyboard == Keyboard.uppercase)
+            leftButton(icon: "ALPHANUMERIC", highlight: keyboard == Keyboard.lowercase || keyboard == Keyboard.uppercase)
                 .onTapGesture {
                     keyboard = Keyboard.lowercase
                     capsLock = false
                 }
             Spacer()
             // Accent
-            leftButton(highlight: keyboard == Keyboard.accent)
+            leftButton(icon: "ACCENT", highlight: keyboard == Keyboard.accent)
                 .onTapGesture {
                     keyboard = Keyboard.accent
                     capsLock = false
                 }
             Spacer()
-            // Japanese
-            leftButton(highlight: keyboard == Keyboard.japanese)
-                .onTapGesture {
-                    keyboard = Keyboard.japanese
-                    capsLock = false
-                }
-            Spacer()
             // Symbols
-            leftButton(highlight: keyboard == Keyboard.symbols)
+            leftButton(icon: "SYMBOLS", highlight: keyboard == Keyboard.symbols)
                 .onTapGesture {
                     keyboard = Keyboard.symbols
                     capsLock = false
                 }
             Spacer()
             // Emoji
-            leftButton(highlight: keyboard == Keyboard.emoji, bottom: true)
+            leftButton(icon: "EMOJI", highlight: keyboard == Keyboard.emoji)
                 .onTapGesture {
                     keyboard = Keyboard.emoji
                     capsLock = false
                 }
+            Spacer()
+            // Extra emojis and symbols
+            leftButton(icon: "EXTRA", highlight: keyboard == Keyboard.extra, bottom: true)
+                .onTapGesture {
+                    keyboard = Keyboard.extra
+                    capsLock = false
+                }
+            Spacer()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding(.top, PIXEL_SIZE)
@@ -559,8 +564,48 @@ struct SwiftUIView: View {
         .layoutPriority(1)
     }
     
-    private func leftButton(highlight: Bool = false, top: Bool = false, bottom: Bool = false) -> some View {
-        ZStack {
+    private func leftButton(icon: String, highlight: Bool = false, top: Bool = false, bottom: Bool = false) -> some View {
+        let highlightColor = Color.white
+        var strokeColor = LEFT_BUTTON_STROKE_COLOR
+        var shadowColor = LEFT_BUTTON_SHADOW_COLOR
+        var highlightMixColor = LEFT_BUTTON_HIGHLIGHT_MIX_COLOR
+        
+        if highlight {
+            strokeColor = colorTheme.leftStroke
+            shadowColor = colorTheme.border
+            highlightMixColor = colorTheme.background
+        }
+        
+        let pixels = Glyphs.iconPixels[icon] ?? Glyphs.iconPixels["BLANK"]!
+        let width = pixels[0].count
+        let height = pixels.count
+        
+        return VStack(spacing: 0) {
+            Canvas(
+                opaque: false,
+                colorMode: .linear,
+                rendersAsynchronously: false
+            ) { context, size in
+                for y in 0..<height {
+                    for x in 0..<width {
+                        if pixels[y][x] != 0 {
+                            var color = Color.clear
+                            if pixels[y][x] == 1 {
+                                color = strokeColor
+                            } else if pixels[y][x] == 2 {
+                                color = highlightColor
+                            } else if pixels[y][x] == 3 {
+                                color = shadowColor
+                            } else if pixels[y][x] == 4 {
+                                color = highlightMixColor
+                            }
+                            context.fill(Path(CGRect(x: x, y: y, width: 1, height: 1)), with: .color(color))
+                        }
+                    }
+                }
+            }
+            .frame(width: CGFloat(width), height: CGFloat(height))
+            .scaleEffect(1.4)
         }
         .frame(width: 22, height: 22)
         .background(highlight ? colorTheme.leftBackground : LEFT_BUTTON_BACKGROUND_COLOR)
