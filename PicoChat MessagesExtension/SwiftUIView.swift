@@ -298,10 +298,10 @@ struct SwiftUIView: View {
                 .onChanged { value in
                     heldGlyph = glyph
 
-                    if !isControl {
+                    if !isControl && (abs(value.translation.width) > 5 || abs(value.translation.height) > 5) {
                         dragPosition = value.location.applying(.init(translationX: -canvasFrame.minX, y: -canvasFrame.minY))
                         let potDragX = floor(dragPosition.x / canvasFrame.width * CGFloat(CANVAS_WIDTH) - 3)
-                        let potDragY = floor(dragPosition.y / canvasFrame.height * CGFloat(CANVAS_HEIGHT) - 20)
+                        let potDragY = floor(dragPosition.y / canvasFrame.height * CGFloat(CANVAS_HEIGHT) - 15)
                         if potDragX.isFinite && potDragY.isFinite && potDragX >= 0 && potDragX < CGFloat(CANVAS_WIDTH) && potDragY >= 0 && potDragY < CGFloat(CANVAS_HEIGHT) {
                             dragX = Int(potDragX)
                             dragY = Int(potDragY)
