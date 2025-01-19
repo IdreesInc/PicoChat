@@ -57,6 +57,22 @@ let COLORS = [
     ColorTheme([Color(hex: "#FBDBF3"), Color(hex: "#FB0071"), Color(hex: "#FB41AA"), Color(hex: "#79008A"), Color(hex: "#EB00C3"), Color(hex: "#FBC3EB"), Color(hex: "#FBB2FB")]),
 ]
 
+let PEN_COLORS = [
+    Color(hex: "#000000"),
+    Color(hex: "#ff00f3"),
+    Color(hex: "#ff0096"),
+    Color(hex: "#ff0021"),
+    Color(hex: "#ff3400"),
+    Color(hex: "#ffa500"),
+    Color(hex: "#5dff00"),
+    Color(hex: "#00ff00"),
+    Color(hex: "#00ffbf"),
+    Color(hex: "#00cfff"),
+    Color(hex: "#0086ff"),
+    Color(hex: "#0034ff"),
+    Color(hex: "#3400ff"),
+]
+
 struct ColorTheme {
     var background: Color
     var border: Color
@@ -112,9 +128,14 @@ struct SwiftUIView: View {
     @State private var lastGlyphLocation = [STARTING_X, STARTING_Y]
     @State private var heldGlyph: String? = nil
     @State private var drawing = false
-    
-    // TODO: File system serde
+    @State private var canvasFrame: CGRect = .zero
+    @State private var dragPosition: CGPoint = .zero
+    @State private var dragX: Int? = nil
+    @State private var dragY: Int? = nil
     @State private var snapshots = [Snapshot]()
+    @State private var penColorIndex = 0
+    @State private var penLength = 0
+    @State private var rainbowPen = false
     
     let conversation: MSConversation
     let keyboards = [
@@ -197,45 +218,153 @@ struct SwiftUIView: View {
         .coordinateSpace(name: "screen")
     }
     
-    private func send() {
-        takeSnapshot()
-        let renderer = ImageRenderer(content: chatCanvas(interactive: false))
-        renderer.scale = 5
-        if let image = renderer.uiImage {
-            let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString).appendingPathExtension("png")
-            if let data = image.pngData() {
-                try? data.write(to: url)
+    func getAndIncrementInk() -> Int {
+        if rainbowPen {
+            penLength += 1
+            if penLength >= 3 {
+                penLength = 0
+                penColorIndex += 1
+                if penColorIndex >= PEN_COLORS.count {
+                    penColorIndex = 1
+                }
             }
-            conversation.insertAttachment(url, withAlternateFilename: "Image.png") { error in
-                if let error = error {
-                    print("Failed to insert image: \(error.localizedDescription)")
+            return penType == PenType.eraser ? 0 : (penColorIndex + 1)
+        }
+        return penType == PenType.eraser ? 0 : 1
+    }
+        
+    private func chatCanvas(interactive: Bool) -> some View {
+        Canvas(
+            opaque: true,
+            colorMode: .linear,
+            rendersAsynchronously: false
+        ) { context, size in
+            context.fill(Path(CGRect(origin: .zero, size: size)), with: .color(BACKGROUND_COLOR))
+            
+            // Draw notebook lines
+            if (interactive) {
+                for y in stride(from: 0, to: CANVAS_HEIGHT, by: NOTEBOOK_LINE_SPACING) {
+                    context.stroke(Path { path in
+                        path.move(to: CGPoint(x: 0, y: y))
+                        path.addLine(to: CGPoint(x: CANVAS_WIDTH, y: y))
+                    }, with: .color(colorTheme.background), lineWidth: 1)
+                }
+            }
+            
+            // Get coordinates relative to the canvas pixels
+            var overlayPixels: [[Int]] = []
+            if dragX != nil && dragY != nil && heldGlyph != nil {
+                overlayPixels = getTypedPixels(x: dragX!, y: dragY!, glyph: heldGlyph!)
+            }
+                        
+            // Draw each pixel
+            for y in 0..<grid.count {
+                for x in 0..<grid[y].count {
+                    if grid[y][x] > 0 {
+                        context.fill(Path(CGRect(x: x, y: y, width: 1, height: 1)), with: .color(PEN_COLORS[grid[y][x] - 1]))
+                    }
+                }
+            }
+            
+            // Draw overlay
+            for pixel in overlayPixels {
+                let x = pixel[0]
+                let y = pixel[1]
+                let value = pixel[2]
+                if value > 0 {
+                    context.fill(Path(CGRect(x: x, y: y, width: 1, height: 1)), with: .color(PEN_COLORS[value - 1]))
                 }
             }
         }
-    }
-    
-    private func sendAsSticker() {
-        let renderer = ImageRenderer(content: chatCanvas(interactive: false))
-        if let image = renderer.uiImage {
-            let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString).appendingPathExtension("png")
-            if let data = image.pngData() {
-                try? data.write(to: url)
-            }
-            conversation.insert(try! MSSticker(contentsOfFileURL: url, localizedDescription: "Sticker")) { error in
-                if let error = error {
-                    print("Failed to insert sticker: \(error.localizedDescription)")
-                }
-            }
+        .frame(width: CGFloat(CANVAS_WIDTH), height: CGFloat(CANVAS_HEIGHT))
+        .roundedBorder(radius: CORNER_RADIUS, borderLineWidth: 1, borderColor: .white, insetColor: colorTheme.border, nameColor: colorTheme.background)
+        .applyIf(interactive) { view in
+            view.gesture(
+                DragGesture(minimumDistance: 0, coordinateSpace: .local)
+                    .onChanged { value in
+                        if !drawing {
+                            takeSnapshot()
+                            drawing = true
+                        }
+                        var ink = getAndIncrementInk()
+                        if value.location.x >= 0 && value.location.x < CGFloat(CANVAS_WIDTH) && value.location.y >= 0 && value.location.y < CGFloat(CANVAS_HEIGHT) {
+                            draw(x: Int(value.location.x), y: Int(value.location.y), value: ink)
+                            if penSize == PenSize.big {
+                                draw(x: Int(value.location.x) - 1, y: Int(value.location.y), value: ink)
+                                draw(x: Int(value.location.x) - 1, y: Int(value.location.y) - 1, value: ink)
+                                draw(x: Int(value.location.x), y: Int(value.location.y) - 1, value: ink)
+                            }
+                        }
+                        if let lastTouch = lastTouchLocation {
+                            // Bresenham's Line Algorithm
+                            let from = lastTouch
+                            let to = value.location
+
+                            let x0 = Int(from.x)
+                            let y0 = Int(from.y)
+                            let x1 = Int(to.x)
+                            let y1 = Int(to.y)
+                            
+                            let dx = abs(x1 - x0)
+                            let dy = abs(y1 - y0)
+                            
+                            let sx = x0 < x1 ? 1 : -1
+                            let sy = y0 < y1 ? 1 : -1
+                            
+                            var err = dx - dy
+                            var x = x0
+                            var y = y0
+                            
+                            while true {
+                                ink = getAndIncrementInk()
+                                
+                                draw(x: x, y: y, value: ink)
+                                if penSize == PenSize.big {
+                                    draw(x: x - 1, y: y, value: ink)
+                                    draw(x: x - 1, y: y - 1, value: ink)
+                                    draw(x: x, y: y - 1, value: ink)
+                                }
+                                if x == x1 && y == y1 {
+                                    break
+                                }
+                                let e2 = 2 * err
+                                if e2 > -dy {
+                                    err -= dy
+                                    x += sx
+                                }
+                                if e2 < dx {
+                                    err += dx
+                                    y += sy
+                                }
+                            }
+                        }
+
+                        lastTouchLocation = value.location
+                    }
+                    .onEnded { _ in
+                        lastTouchLocation = nil
+                        drawing = false
+                    }
+            )
+            .padding(.top, VERTICAL_PADDING)
+            .padding(.bottom, VERTICAL_PADDING)
+            .padding(.leading, HORIZONTAL_PADDING)
+            .padding(.trailing, HORIZONTAL_PADDING)
+            .scaleEffect(CGFloat(SCALE))
+            .background(GeometryReader { proxy in
+                Color.clear
+                    .onAppear() {
+                        canvasFrame = proxy.frame(in: .named("screen"))
+                    }
+            })
         }
-    }
-    
-    private func clear() {
-        for y in 0..<grid.count {
-            for x in 0..<grid[y].count {
-                grid[y][x] = 0
-            }
+        .applyIf(!interactive) { view in
+            view
+            .padding(.top, 25)
+            .padding(.bottom, 25)
+            .padding(.leading, 7)
+            .padding(.trailing, 7)
         }
-        lastGlyphLocation = [STARTING_X, STARTING_Y]
     }
     
     private func key(glyph: String) -> some View {
@@ -463,147 +592,51 @@ struct SwiftUIView: View {
         .roundedBorder(radius: CORNER_RADIUS * PIXEL_SIZE, borderLineWidth: PIXEL_SIZE, borderColor: DARK_BORDER_COLOR, insetColor: KEYBOARD_BACKGROUND_COLOR, topLeft: top, topRight: false, bottomLeft: bottom, bottomRight: false)
     }
     
-    private func chatCanvas(interactive: Bool) -> some View {
-        Canvas(
-            opaque: true,
-            colorMode: .linear,
-            rendersAsynchronously: false
-        ) { context, size in
-            context.fill(Path(CGRect(origin: .zero, size: size)), with: .color(BACKGROUND_COLOR))
-            
-            // Draw notebook lines
-            if (interactive) {
-                for y in stride(from: 0, to: CANVAS_HEIGHT, by: NOTEBOOK_LINE_SPACING) {
-                    context.stroke(Path { path in
-                        path.move(to: CGPoint(x: 0, y: y))
-                        path.addLine(to: CGPoint(x: CANVAS_WIDTH, y: y))
-                    }, with: .color(colorTheme.background), lineWidth: 1)
+    private func send() {
+        takeSnapshot()
+        let renderer = ImageRenderer(content: chatCanvas(interactive: false))
+        renderer.scale = 5
+        if let image = renderer.uiImage {
+            let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString).appendingPathExtension("png")
+            if let data = image.pngData() {
+                try? data.write(to: url)
+            }
+            conversation.insertAttachment(url, withAlternateFilename: "Image.png") { error in
+                if let error = error {
+                    print("Failed to insert image: \(error.localizedDescription)")
                 }
             }
-            
-            // Get coordinates relative to the canvas pixels
-            var overlayPixels: [[Int]] = []
-            if dragX != nil && dragY != nil && heldGlyph != nil {
-                overlayPixels = getTypedPixels(x: dragX!, y: dragY!, glyph: heldGlyph!)
-            }
-                        
-            // Draw each pixel
-            for y in 0..<grid.count {
-                for x in 0..<grid[y].count {
-                    if grid[y][x] == 1 {
-                        context.fill(Path(CGRect(x: x, y: y, width: 1, height: 1)), with: .color(.black))
-                    }
-                }
-            }
-            
-            // Draw overlay
-            for pixel in overlayPixels {
-                let x = pixel[0]
-                let y = pixel[1]
-                let value = pixel[2]
-                if value == 1 {
-                    context.fill(Path(CGRect(x: x, y: y, width: 1, height: 1)), with: .color(.black))
-                }
-            }
-        }
-        .frame(width: CGFloat(CANVAS_WIDTH), height: CGFloat(CANVAS_HEIGHT))
-        .roundedBorder(radius: CORNER_RADIUS, borderLineWidth: 1, borderColor: .white, insetColor: colorTheme.border, nameColor: colorTheme.background)
-        .applyIf(interactive) { view in
-            view.gesture(
-                DragGesture(minimumDistance: 0, coordinateSpace: .local)
-                    .onChanged { value in
-                        if !drawing {
-                            takeSnapshot()
-                            drawing = true
-                        }
-                        let ink = penType == PenType.eraser ? 0 : 1
-                        if value.location.x >= 0 && value.location.x < CGFloat(CANVAS_WIDTH) && value.location.y >= 0 && value.location.y < CGFloat(CANVAS_HEIGHT) {
-                            draw(x: Int(value.location.x), y: Int(value.location.y), value: ink)
-                            if penSize == PenSize.big {
-                                draw(x: Int(value.location.x) - 1, y: Int(value.location.y), value: ink)
-                                draw(x: Int(value.location.x) - 1, y: Int(value.location.y) - 1, value: ink)
-                                draw(x: Int(value.location.x), y: Int(value.location.y) - 1, value: ink)
-                            }
-                        }
-                        if let lastTouch = lastTouchLocation {
-                            // Bresenham's Line Algorithm
-                            let from = lastTouch
-                            let to = value.location
-
-                            let x0 = Int(from.x)
-                            let y0 = Int(from.y)
-                            let x1 = Int(to.x)
-                            let y1 = Int(to.y)
-                            
-                            let dx = abs(x1 - x0)
-                            let dy = abs(y1 - y0)
-                            
-                            let sx = x0 < x1 ? 1 : -1
-                            let sy = y0 < y1 ? 1 : -1
-                            
-                            var err = dx - dy
-                            var x = x0
-                            var y = y0
-                            
-                            while true {
-                                draw(x: x, y: y, value: ink)
-                                if penSize == PenSize.big {
-                                    draw(x: x - 1, y: y, value: ink)
-                                    draw(x: x - 1, y: y - 1, value: ink)
-                                    draw(x: x, y: y - 1, value: ink)
-                                }
-                                if x == x1 && y == y1 {
-                                    break
-                                }
-                                let e2 = 2 * err
-                                if e2 > -dy {
-                                    err -= dy
-                                    x += sx
-                                }
-                                if e2 < dx {
-                                    err += dx
-                                    y += sy
-                                }
-                            }
-                        }
-
-                        lastTouchLocation = value.location
-                    }
-                    .onEnded { _ in
-                        lastTouchLocation = nil
-                        drawing = false
-                    }
-            )
-            .padding(.top, VERTICAL_PADDING)
-            .padding(.bottom, VERTICAL_PADDING)
-            .padding(.leading, HORIZONTAL_PADDING)
-            .padding(.trailing, HORIZONTAL_PADDING)
-            .scaleEffect(CGFloat(SCALE))
-            .background(GeometryReader { proxy in
-                Color.clear
-                    .onAppear() {
-                        canvasFrame = proxy.frame(in: .named("screen"))
-                    }
-            })
-        }
-        .applyIf(!interactive) { view in
-            view
-            .padding(.top, 25)
-            .padding(.bottom, 25)
-            .padding(.leading, 7)
-            .padding(.trailing, 7)
         }
     }
     
-    @State private var canvasFrame: CGRect = .zero
-    @State private var dragPosition: CGPoint = .zero
-    @State private var dragX: Int? = nil
-    @State private var dragY: Int? = nil
+    private func sendAsSticker() {
+        let renderer = ImageRenderer(content: chatCanvas(interactive: false))
+        if let image = renderer.uiImage {
+            let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString).appendingPathExtension("png")
+            if let data = image.pngData() {
+                try? data.write(to: url)
+            }
+            conversation.insert(try! MSSticker(contentsOfFileURL: url, localizedDescription: "Sticker")) { error in
+                if let error = error {
+                    print("Failed to insert sticker: \(error.localizedDescription)")
+                }
+            }
+        }
+    }
     
     func draw(x: Int, y: Int, value: Int) {
         if (x >= 0 && x < CANVAS_WIDTH && y >= 0 && y < CANVAS_HEIGHT) {
             grid[y][x] = value;
         }
+    }
+    
+    func clear() {
+        for y in 0..<grid.count {
+            for x in 0..<grid[y].count {
+                grid[y][x] = 0
+            }
+        }
+        lastGlyphLocation = [STARTING_X, STARTING_Y]
     }
     
     func getTypedPixels(x: Int, y: Int, glyph: String) -> [[Int]] {
