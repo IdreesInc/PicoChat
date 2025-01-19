@@ -194,6 +194,7 @@ struct SwiftUIView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(APP_BACKGROUND_COLOR)
+        .coordinateSpace(name: "screen")
     }
     
     private func send() {
@@ -293,11 +294,24 @@ struct SwiftUIView: View {
         .frame(width: keyWidth)
         .background(keyBgColor)
         .gesture(
-            DragGesture(minimumDistance: 0)
+            DragGesture(minimumDistance: 0, coordinateSpace: .named("screen"))
                 .onChanged { value in
                     heldGlyph = glyph
+
+                    if !isControl {
+                        dragPosition = value.location.applying(.init(translationX: -canvasFrame.minX, y: -canvasFrame.minY))
+                        let potDragX = floor(dragPosition.x / canvasFrame.width * CGFloat(CANVAS_WIDTH) - 3)
+                        let potDragY = floor(dragPosition.y / canvasFrame.height * CGFloat(CANVAS_HEIGHT) - 20)
+                        if potDragX.isFinite && potDragY.isFinite && potDragX >= 0 && potDragX < CGFloat(CANVAS_WIDTH) && potDragY >= 0 && potDragY < CGFloat(CANVAS_HEIGHT) {
+                            dragX = Int(potDragX)
+                            dragY = Int(potDragY)
+                        } else {
+                            dragX = nil
+                            dragY = nil
+                        }
+                    }
                 }
-                .onEnded { _ in
+                .onEnded { value in
                     heldGlyph = nil
                     
                     let HORIZONTAL_MARGIN = 5
@@ -325,7 +339,11 @@ struct SwiftUIView: View {
                         }
                         var nextX = lastGlyphLocation[0] + 1
                         var nextY = lastGlyphLocation[1]
-                        if (nextX + textWidth >= CANVAS_WIDTH - HORIZONTAL_MARGIN) {
+                        if (dragX != nil && dragY != nil) {
+                            // Type dragged glyph
+                            nextX = dragX!
+                            nextY = dragY!
+                        } else if (nextX + textWidth >= CANVAS_WIDTH - HORIZONTAL_MARGIN) {
                             nextX = HORIZONTAL_MARGIN
                             nextY += NOTEBOOK_LINE_SPACING
                         }
@@ -336,6 +354,11 @@ struct SwiftUIView: View {
                             keyboard = Keyboard.lowercase
                         }
                     }
+                    
+                    dragPosition = .zero
+                    dragX = nil
+                    dragY = nil
+                    heldGlyph = nil
                 }
         )
     }
@@ -446,8 +469,8 @@ struct SwiftUIView: View {
             colorMode: .linear,
             rendersAsynchronously: false
         ) { context, size in
-            // Fill the canvas with a white background
             context.fill(Path(CGRect(origin: .zero, size: size)), with: .color(BACKGROUND_COLOR))
+            
             // Draw notebook lines
             if (interactive) {
                 for y in stride(from: 0, to: CANVAS_HEIGHT, by: NOTEBOOK_LINE_SPACING) {
@@ -457,12 +480,29 @@ struct SwiftUIView: View {
                     }, with: .color(colorTheme.background), lineWidth: 1)
                 }
             }
+            
+            // Get coordinates relative to the canvas pixels
+            var overlayPixels: [[Int]] = []
+            if dragX != nil && dragY != nil && heldGlyph != nil {
+                overlayPixels = getTypedPixels(x: dragX!, y: dragY!, glyph: heldGlyph!)
+            }
+                        
             // Draw each pixel
             for y in 0..<grid.count {
                 for x in 0..<grid[y].count {
                     if grid[y][x] == 1 {
                         context.fill(Path(CGRect(x: x, y: y, width: 1, height: 1)), with: .color(.black))
                     }
+                }
+            }
+            
+            // Draw overlay
+            for pixel in overlayPixels {
+                let x = pixel[0]
+                let y = pixel[1]
+                let value = pixel[2]
+                if value == 1 {
+                    context.fill(Path(CGRect(x: x, y: y, width: 1, height: 1)), with: .color(.black))
                 }
             }
         }
@@ -539,6 +579,12 @@ struct SwiftUIView: View {
             .padding(.leading, HORIZONTAL_PADDING)
             .padding(.trailing, HORIZONTAL_PADDING)
             .scaleEffect(CGFloat(SCALE))
+            .background(GeometryReader { proxy in
+                Color.clear
+                    .onAppear() {
+                        canvasFrame = proxy.frame(in: .named("screen"))
+                    }
+            })
         }
         .applyIf(!interactive) { view in
             view
@@ -549,24 +595,41 @@ struct SwiftUIView: View {
         }
     }
     
+    @State private var canvasFrame: CGRect = .zero
+    @State private var dragPosition: CGPoint = .zero
+    @State private var dragX: Int? = nil
+    @State private var dragY: Int? = nil
+    
     func draw(x: Int, y: Int, value: Int) {
         if (x >= 0 && x < CANVAS_WIDTH && y >= 0 && y < CANVAS_HEIGHT) {
             grid[y][x] = value;
         }
     }
     
-    func type(x: Int, y: Int, glyph: String) {
-        takeSnapshot()
-
+    func getTypedPixels(x: Int, y: Int, glyph: String) -> [[Int]] {
         let pixels = Glyphs.glyphPixels[glyph] ?? Glyphs.glyphPixels["A"]!
         let adjustments = Glyphs.adjustments[glyph] ?? [0, 0]
         let width = pixels[0].count
         let height = pixels.count
         let yMod = adjustments[1]
+        var returnedPixels = Array(repeating: Array(repeating: 0, count: 3), count: width * height)
+        var index = 0
         for row in 0..<height {
             for col in 0..<width {
-                draw(x: x + col, y: y + row - height + yMod, value: pixels[row][col])
+                returnedPixels[index][0] = x + col
+                returnedPixels[index][1] = y + row - height + yMod
+                returnedPixels[index][2] = pixels[row][col]
+                index += 1
             }
+        }
+        return returnedPixels
+    }
+    
+    func type(x: Int, y: Int, glyph: String) {
+        takeSnapshot()
+        let pixels = getTypedPixels(x: x, y: y, glyph: glyph)
+        for pixel in pixels {
+            draw(x: pixel[0], y: pixel[1], value: pixel[2])
         }
     }
     
