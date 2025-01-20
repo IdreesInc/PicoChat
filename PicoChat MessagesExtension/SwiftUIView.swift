@@ -145,18 +145,25 @@ struct SwiftUIView: View {
     let keyboards = [
         Keyboard.lowercase: [
             ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "-", "="],
-            ["SPACER", "q", "w", "e", "r", "t", "y", "u", "i", "o", "p", "BACKSPACE"],
+            ["HALF_SPACER", "q", "w", "e", "r", "t", "y", "u", "i", "o", "p", "BACKSPACE"],
             ["CAPS", "a", "s", "d", "f", "g", "h", "j", "k", "l", "ENTER"],
             ["SHIFT", "z", "x", "c", "v", "b", "n", "m", ",", ".", "/"],
             [";", "'", "SPACE", "[", "]"]
         ],
         Keyboard.uppercase: [
             ["!", "@", "#", "$", "%", "^", "&", "*", "(", ")", "_", "+"],
-            ["SPACER", "Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P", "BACKSPACE"],
+            ["HALF_SPACER", "Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P", "BACKSPACE"],
             ["CAPS", "A", "S", "D", "F", "G", "H", "J", "K", "L", "ENTER"],
             ["SHIFT", "Z", "X", "C", "V", "B", "N", "M", "<", ">", "?"],
             [":", "~", "SPACE", "{", "}"]
-        ]
+        ],
+        Keyboard.accent: [
+            ["à", "á", "â", "ä", "è", "é", "ê", "ë", "ì", "í", "î", "SPACER"],
+            ["ï", "ò", "ó", "ô", "ö", "œ", "ù", "ú", "û", "ü", "ç", "SMALL_BACKSPACE"],
+            ["ñ", "β", "À", "Á", "Â", "Ä", "È", "É", "Ê", "Ë", "Ì", "SMALL_ENTER"],
+            ["Í", "Î", "Ï", "Ò", "Ó", "Ô", "Ö", "Œ", "Ù", "Ú", "Û", "SMALL_SPACE"],
+            ["Ü", "Ç", "Ñ", "¡", "¿", "€", "¢", "£", "SPACER", "SPACER", "SPACER", "SPACER"]
+        ],
     ]
     
     var body: some View {
@@ -377,6 +384,7 @@ struct SwiftUIView: View {
         var keyWidth = NORMAL_KEY_WIDTH * (Glyphs.controls[glyph] ?? 1)
         var keyBgColor = isControl ? CONTROL_BUTTON_COLOR : KEYBOARD_BUTTON_COLOR
         var keyTextColor = isControl ? CONTROL_TEXT_COLOR : .black
+        var canvasScale = 1.4
         
         let pixels = Glyphs.glyphPixels[glyph] ?? Glyphs.glyphPixels["?"]!
         let adjustments = Glyphs.adjustments[glyph] ?? [0, 0]
@@ -386,13 +394,18 @@ struct SwiftUIView: View {
         let BOTTOM_SPACE = 1
         let yMod = MAX_HEIGHT - BOTTOM_SPACE - height + adjustments[1]
         
-        if glyph == "SPACER" {
+        if glyph == "HALF_SPACER" {
             keyWidth = floor(NORMAL_KEY_WIDTH / 2)
+            keyBgColor = .clear
+            keyTextColor = .clear
+        } else if glyph == "SPACER" {
             keyBgColor = .clear
             keyTextColor = .clear
         } else if glyph == "CAPS" {
             keyBgColor = capsLock ? colorTheme.controlPressedBackground : keyBgColor
             keyTextColor = capsLock ? colorTheme.keyPressedText : keyTextColor
+        } else if glyph == "SMALL_SPACE" {
+            canvasScale = 1.2
         }
         
         if glyph == heldGlyph {
@@ -421,7 +434,7 @@ struct SwiftUIView: View {
                 }
             }
             .frame(width: CGFloat(width), height: CGFloat(MAX_HEIGHT))
-            .scaleEffect(1.4)
+            .scaleEffect(canvasScale)
         }
         .frame(maxHeight: .infinity)
         .frame(width: keyWidth)
@@ -458,15 +471,15 @@ struct SwiftUIView: View {
                         } else {
                             keyboard = Keyboard.lowercase
                         }
-                    } else if glyph == "ENTER" {
+                    } else if glyph == "ENTER" || glyph == "SMALL_ENTER" {
                         lastGlyphLocation[0] = HORIZONTAL_MARGIN - 1
                         lastGlyphLocation[1] += NOTEBOOK_LINE_SPACING
-                    } else if glyph == "BACKSPACE" {
+                    } else if glyph == "BACKSPACE" || glyph == "SMALL_BACKSPACE" {
                         loadSnapshot()
                     } else {
                         var text = glyph
                         var textWidth = width
-                        if (glyph == "SPACE") {
+                        if (glyph == "SPACE" || glyph == "SMALL_SPACE") {
                             text = " "
                             textWidth = Glyphs.glyphPixels[" "]![0].count
                         }
