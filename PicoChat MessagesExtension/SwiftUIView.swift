@@ -148,7 +148,7 @@ struct SwiftUIView: View {
             ["HALF_SPACER", "q", "w", "e", "r", "t", "y", "u", "i", "o", "p", "BACKSPACE"],
             ["CAPS", "a", "s", "d", "f", "g", "h", "j", "k", "l", "ENTER"],
             ["SHIFT", "z", "x", "c", "v", "b", "n", "m", ",", ".", "/"],
-            [";", "'", "SPACE", "[", "]"]
+            [";", "’", "SPACE", "[", "]"]
         ],
         Keyboard.uppercase: [
             ["!", "@", "#", "$", "%", "^", "&", "*", "(", ")", "_", "+"],
@@ -163,6 +163,13 @@ struct SwiftUIView: View {
             ["ñ", "β", "À", "Á", "Â", "Ä", "È", "É", "Ê", "Ë", "Ì", "SMALL_ENTER"],
             ["Í", "Î", "Ï", "Ò", "Ó", "Ô", "Ö", "Œ", "Ù", "Ú", "Û", "SMALL_SPACE"],
             ["Ü", "Ç", "Ñ", "¡", "¿", "€", "¢", "£", "SPACER", "SPACER", "SPACER", "SPACER"]
+        ],
+        Keyboard.symbols: [
+            ["!", "?", "&", "″", "'", "～", ":", ";", "@", "~", "_", "SPACER"],
+            ["+", "-", "*", "/", "×", "÷", "=", "→", "←", "↑", "↓", "SMALL_BACKSPACE"],
+            ["「", "」", "“", "”", "(", ")", "<", ">", "{", "}", "•", "SMALL_ENTER"],
+            ["%", "※", "〒", "#", "♭", "♪", "±", "$", "¢", "£", "\\", "SMALL_SPACE"],
+            ["^", "°", "|", "／", "＼", "∞", "∴", "…", "™", "©", "®", "SPACER"]
         ],
     ]
     
@@ -282,8 +289,8 @@ struct SwiftUIView: View {
                 let x = pixel[0]
                 let y = pixel[1]
                 let value = pixel[2]
-                if value > 0 {
-                    context.fill(Path(CGRect(x: x, y: y, width: 1, height: 1)), with: .color(PEN_COLORS[value - 1]))
+                if value != 0 {
+                    context.fill(Path(CGRect(x: x, y: y, width: 1, height: 1)), with: .color(PEN_COLORS[0]))
                 }
             }
         }
