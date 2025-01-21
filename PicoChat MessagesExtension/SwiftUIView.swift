@@ -13,14 +13,16 @@ let SCALE = 1.5
 let CANVAS_WIDTH = 234
 let NOTEBOOK_LINE_SPACING = 18
 let CANVAS_HEIGHT = NOTEBOOK_LINE_SPACING * 5 + 1
-let NAME_WIDTH = 59
+let MIN_NAME_WIDTH = 59
 let SCALED_CANVAS_WIDTH = Double(CANVAS_WIDTH) * SCALE
 let SCALED_CANVAS_HEIGHT = Double(CANVAS_HEIGHT) * SCALE
 let PIXEL_SIZE = SCALE
 let CORNER_RADIUS = 6.0
 let CONTROLS_HEIGHT = SCALED_CANVAS_HEIGHT - PIXEL_SIZE * 5
-let STARTING_X = NAME_WIDTH + 4 - 1
+let STARTING_X = MIN_NAME_WIDTH + 4 - 1
 let STARTING_Y = NOTEBOOK_LINE_SPACING - 3
+let MAX_NAME_LENGTH = 16
+let HORIZONTAL_MARGIN = 5
 
 let APP_BACKGROUND_COLOR = Color(hex: "f0f0f0")
 let BACKGROUND_COLOR = Color(hex: "fcfcfc")
@@ -115,7 +117,6 @@ enum Keyboard {
     case lowercase
     case uppercase
     case accent
-//    case japanese
     case symbols
     case emoji
     case extra
@@ -140,6 +141,9 @@ struct SwiftUIView: View {
     @State private var penColorIndex = 0
     @State private var penLength = 0
     @State private var rainbowPen = false
+    @State private var name = ["I", "d", "r", "e", "e", "s"]
+    @State private var oldName: [String]? = nil
+    @State private var settingName = false
     
     let conversation: MSConversation
     let keyboards = [
@@ -296,10 +300,59 @@ struct SwiftUIView: View {
         }
         .frame(width: CGFloat(CANVAS_WIDTH), height: CGFloat(CANVAS_HEIGHT))
         .roundedBorder(radius: CORNER_RADIUS, borderLineWidth: 1, borderColor: .white, insetColor: colorTheme.border, nameColor: colorTheme.background)
+        .overlay(alignment: .topLeading, content: {
+                ZStack {
+                    Canvas(opaque: false,
+                           colorMode: .linear,
+                           rendersAsynchronously: false
+                    ) { context, size in
+                        let nameWidths = name.map { Glyphs.glyphPixels[$0]![0].count }
+                        var x = 6
+                        for i in 0..<name.count {
+                            let pixels = getTypedPixels(x: x, y: NOTEBOOK_LINE_SPACING - 4, glyph: name[i])
+                            let width = nameWidths[i]
+                            for pixel in pixels {
+                                let pixelX = pixel[0]
+                                let pixelY = pixel[1]
+                                let value = pixel[2]
+                                if value != 0 {
+                                    context.fill(Path(CGRect(x: pixelX, y: pixelY, width: 1, height: 1)), with: .color(colorTheme.border))
+                                }
+                            }
+                            x += width + 1
+                        }
+                                
+                    }.frame(width: max(CGFloat(MIN_NAME_WIDTH), calculateNameWidth() + 12), height: CGFloat(NOTEBOOK_LINE_SPACING) + 1)
+                    .background(alignment: .topLeading) {
+                        // iOS 16 doesn't allow for fill and stroke at the same time, so have to make two shapes
+                        // Fill
+                        UnevenRoundedRectangle(cornerRadii: .init(
+                            topLeading: CORNER_RADIUS,
+                            bottomTrailing: CORNER_RADIUS), style: .continuous)
+                        .inset(by: 1)
+                        .foregroundStyle(colorTheme.background)
+                        // Stroke
+                        UnevenRoundedRectangle(cornerRadii: .init(
+                            topLeading: CORNER_RADIUS,
+                            bottomTrailing: CORNER_RADIUS), style: .continuous)
+                        .inset(by: 1)
+                        .strokeBorder(colorTheme.border, lineWidth: 1, antialiased: true)
+                    }
+                    .onTapGesture {
+                        if !settingName {
+                            beginNameChange()
+                        }
+                    }
+                }
+            }
+        )
         .applyIf(interactive) { view in
             view.gesture(
                 DragGesture(minimumDistance: 0, coordinateSpace: .local)
                     .onChanged { value in
+                        if settingName {
+                            return
+                        }
                         if !drawing {
                             takeSnapshot()
                             drawing = true
@@ -385,6 +438,63 @@ struct SwiftUIView: View {
         }
     }
     
+    func beginNameChange() {
+        settingName = true
+        oldName = name.map { $0 }
+        name = []
+        takeSnapshot()
+        clear()
+        // Enter your name and select a color!
+        let letters = ["E", "n", "t", "e", "r", " ", "y", "o", "u", "r", " ", "n", "a", "m", "e", " ", "a", "n", "d", " ", "s", "e", "l", "e", "c", "t", " ", "a", " ", "c", "o", "l", "o", "r", "!",]
+        newLine()
+        for letter in letters {
+            type(glyph: letter, snapshot: false)
+        }
+        newLine()
+        // Press ENTER to confirm or CLEAR to cancel
+        let enter = ["P", "r", "e", "s", "s", " ", "E", "N", "T", "E", "R", " ", "t", "o", " ", "c", "o", "n", "f", "i", "r", "m", " ", "o", "r", " ", "C", "L", "E", "A", "R", " ", "t", "o", " ", "c", "a", "n", "c", "e", "l", "!"]
+        for letter in enter {
+            type(glyph: letter, snapshot: false)
+        }
+    }
+    
+    func addGlyphToName(glyph: String) {
+        if name.count < MAX_NAME_LENGTH {
+            name.append(glyph)
+        }
+    }
+    
+    func removeGlyphFromName() {
+        if name.count > 0 {
+            name.removeLast()
+        }
+    }
+    
+    func confirmNameChange() {
+        if name.count == 0 {
+            cancelNameChange()
+        }
+        settingName = false
+        oldName = nil
+        loadSnapshot()
+    }
+    
+    func cancelNameChange() {
+        settingName = false
+        name = oldName.map { $0 } ?? []
+        oldName = nil
+        loadSnapshot()
+    }
+    
+    func calculateNameWidth() -> CGFloat {
+        let nameWidths = name.map{ Glyphs.glyphPixels[$0]![0].count }
+        var width = 0
+        for i in 0..<name.count {
+            width += nameWidths[i] + 1
+        }
+        return CGFloat(width) - 1
+    }
+    
     private func key(glyph: String) -> some View {
         let NORMAL_KEY_WIDTH = 23.0
         let isControl = Glyphs.controls[glyph] != nil
@@ -451,7 +561,7 @@ struct SwiftUIView: View {
                 .onChanged { value in
                     heldGlyph = glyph
 
-                    if !isControl && (abs(value.translation.width) > 5 || abs(value.translation.height) > 5) {
+                    if !settingName && !isControl && (abs(value.translation.width) > 5 || abs(value.translation.height) > 5) {
                         dragPosition = value.location.applying(.init(translationX: -canvasFrame.minX, y: -canvasFrame.minY))
                         let potDragX = floor(dragPosition.x / canvasFrame.width * CGFloat(CANVAS_WIDTH) - 3)
                         let potDragY = floor(dragPosition.y / canvasFrame.height * CGFloat(CANVAS_HEIGHT) - 15)
@@ -466,45 +576,32 @@ struct SwiftUIView: View {
                 }
                 .onEnded { value in
                     heldGlyph = nil
-                    
-                    let HORIZONTAL_MARGIN = 5
-                    if glyph == "SHIFT" {
-                        keyboard = keyboard == Keyboard.uppercase ? Keyboard.lowercase : Keyboard.uppercase
-                        capsLock = false
-                    } else if glyph == "CAPS" {
-                        capsLock = !capsLock
-                        if capsLock {
-                            keyboard = Keyboard.uppercase
+
+                    if !settingName {
+                        if glyph == "SHIFT" {
+                            keyboard = keyboard == Keyboard.uppercase ? Keyboard.lowercase : Keyboard.uppercase
+                            capsLock = false
+                        } else if glyph == "CAPS" {
+                            capsLock = !capsLock
+                            if capsLock {
+                                keyboard = Keyboard.uppercase
+                            } else {
+                                keyboard = Keyboard.lowercase
+                            }
+                        } else if glyph == "ENTER" || glyph == "SMALL_ENTER" {
+                            newLine()
+                        } else if glyph == "BACKSPACE" || glyph == "SMALL_BACKSPACE" {
+                            loadSnapshot()
                         } else {
-                            keyboard = Keyboard.lowercase
+                            type(glyph: glyph, overrideX: dragX, overrideY: dragY)
                         }
-                    } else if glyph == "ENTER" || glyph == "SMALL_ENTER" {
-                        lastGlyphLocation[0] = HORIZONTAL_MARGIN - 1
-                        lastGlyphLocation[1] += NOTEBOOK_LINE_SPACING
-                    } else if glyph == "BACKSPACE" || glyph == "SMALL_BACKSPACE" {
-                        loadSnapshot()
                     } else {
-                        var text = glyph
-                        var textWidth = width
-                        if (glyph == "SPACE" || glyph == "SMALL_SPACE") {
-                            text = " "
-                            textWidth = Glyphs.glyphPixels[" "]![0].count
-                        }
-                        var nextX = lastGlyphLocation[0] + 1
-                        var nextY = lastGlyphLocation[1]
-                        if (dragX != nil && dragY != nil) {
-                            // Type dragged glyph
-                            nextX = dragX!
-                            nextY = dragY!
-                        } else if (nextX + textWidth >= CANVAS_WIDTH - HORIZONTAL_MARGIN) {
-                            nextX = HORIZONTAL_MARGIN
-                            nextY += NOTEBOOK_LINE_SPACING
-                        }
-                        type(x: nextX, y: nextY, glyph: text)
-                        lastGlyphLocation[0] = nextX + textWidth
-                        lastGlyphLocation[1] = nextY
-                        if keyboard == Keyboard.uppercase && !capsLock {
-                            keyboard = Keyboard.lowercase
+                        if glyph == "ENTER" || glyph == "SMALL_ENTER" {
+                            confirmNameChange()
+                        } else if glyph == "BACKSPACE" || glyph == "SMALL_BACKSPACE" {
+                            removeGlyphFromName()
+                        } else {
+                            addGlyphToName(glyph: glyph)
                         }
                     }
                     
@@ -514,6 +611,36 @@ struct SwiftUIView: View {
                     heldGlyph = nil
                 }
         )
+    }
+    
+    func newLine() {
+        lastGlyphLocation[0] = HORIZONTAL_MARGIN - 1
+        lastGlyphLocation[1] += NOTEBOOK_LINE_SPACING
+    }
+    
+    func type(glyph: String, overrideX: Int? = nil, overrideY: Int? = nil, snapshot: Bool = true) {
+        var text = glyph
+        var textWidth = (Glyphs.glyphPixels[glyph] ?? Glyphs.glyphPixels["?"]!)[0].count
+        if (glyph == "SPACE" || glyph == "SMALL_SPACE") {
+            text = " "
+            textWidth = Glyphs.glyphPixels[" "]![0].count
+        }
+        var nextX = lastGlyphLocation[0] + 1
+        var nextY = lastGlyphLocation[1]
+        if (overrideX != nil && overrideY != nil) {
+            // Type dragged glyph
+            nextX = overrideX!
+            nextY = overrideY!
+        } else if (nextX + textWidth >= CANVAS_WIDTH - HORIZONTAL_MARGIN) {
+            nextX = HORIZONTAL_MARGIN
+            nextY += NOTEBOOK_LINE_SPACING
+        }
+        drawGlyph(x: nextX, y: nextY, glyph: text, snapshot: snapshot)
+        lastGlyphLocation[0] = nextX + textWidth
+        lastGlyphLocation[1] = nextY
+        if keyboard == Keyboard.uppercase && !capsLock {
+            keyboard = Keyboard.lowercase
+        }
     }
     
     private func leftControls() -> some View {
@@ -636,13 +763,21 @@ struct SwiftUIView: View {
         VStack (spacing: 0){
             rightButton(top: true)
             .onTapGesture {
-                send()
-                clear()
+                if !settingName {
+                    send()
+                    clear()
+                } else {
+                    confirmNameChange()
+                }
             }
             rightButton()
             rightButton(bottom: true)
             .onTapGesture {
-                clear()
+                if !settingName {
+                    clear()
+                } else {
+                    cancelNameChange()
+                }
             }
         }
         .frame(height: CONTROLS_HEIGHT)
@@ -704,27 +839,10 @@ struct SwiftUIView: View {
         lastGlyphLocation = [STARTING_X, STARTING_Y]
     }
     
-    func getTypedPixels(x: Int, y: Int, glyph: String) -> [[Int]] {
-        let pixels = Glyphs.glyphPixels[glyph] ?? Glyphs.glyphPixels["A"]!
-        let adjustments = Glyphs.adjustments[glyph] ?? [0, 0]
-        let width = pixels[0].count
-        let height = pixels.count
-        let yMod = adjustments[1]
-        var returnedPixels = Array(repeating: Array(repeating: 0, count: 3), count: width * height)
-        var index = 0
-        for row in 0..<height {
-            for col in 0..<width {
-                returnedPixels[index][0] = x + col
-                returnedPixels[index][1] = y + row - height + yMod
-                returnedPixels[index][2] = pixels[row][col]
-                index += 1
-            }
+    func drawGlyph(x: Int, y: Int, glyph: String, snapshot: Bool = true) {
+        if snapshot {
+            takeSnapshot()
         }
-        return returnedPixels
-    }
-    
-    func type(x: Int, y: Int, glyph: String) {
-        takeSnapshot()
         let pixels = getTypedPixels(x: x, y: y, glyph: glyph)
         for pixel in pixels {
             draw(x: pixel[0], y: pixel[1], value: pixel[2])
@@ -755,6 +873,25 @@ struct SwiftUIView: View {
             print("No snapshot to load")
         }
     }
+}
+
+func getTypedPixels(x: Int, y: Int, glyph: String) -> [[Int]] {
+    let pixels = Glyphs.glyphPixels[glyph] ?? Glyphs.glyphPixels["A"]!
+    let adjustments = Glyphs.adjustments[glyph] ?? [0, 0]
+    let width = pixels[0].count
+    let height = pixels.count
+    let yMod = adjustments[1]
+    var returnedPixels = Array(repeating: Array(repeating: 0, count: 3), count: width * height)
+    var index = 0
+    for row in 0..<height {
+        for col in 0..<width {
+            returnedPixels[index][0] = x + col
+            returnedPixels[index][1] = y + row - height + yMod
+            returnedPixels[index][2] = pixels[row][col]
+            index += 1
+        }
+    }
+    return returnedPixels
 }
 
 // Extensions
@@ -815,20 +952,20 @@ fileprivate struct ModifierRoundedBorder: ViewModifier {
                         .inset(by: self.borderLineWidth)
                         .strokeBorder(self.insetColor!, lineWidth: self.borderLineWidth, antialiased: self.antialiased)
                     }
-                    if nameColor != nil {
-                        UnevenRoundedRectangle(cornerRadii: .init(
-                            topLeading: self.radius,
-                            bottomTrailing: self.radius), style: .continuous)
-                        .inset(by: self.borderLineWidth)
-                        .frame(width: 59, height: CGFloat(NOTEBOOK_LINE_SPACING) + 1)
-                        .foregroundStyle(nameColor!)
-                        UnevenRoundedRectangle(cornerRadii: .init(
-                            topLeading: self.radius,
-                            bottomTrailing: self.radius), style: .continuous)
-                        .inset(by: self.borderLineWidth)
-                        .strokeBorder(insetColor!, lineWidth: self.borderLineWidth, antialiased: self.antialiased)
-                        .frame(width: CGFloat(NAME_WIDTH), height: CGFloat(NOTEBOOK_LINE_SPACING) + 1)
-                    }
+//                    if nameColor != nil {
+//                        UnevenRoundedRectangle(cornerRadii: .init(
+//                            topLeading: self.radius,
+//                            bottomTrailing: self.radius), style: .continuous)
+//                        .inset(by: self.borderLineWidth)
+//                        .frame(width: 59, height: CGFloat(NOTEBOOK_LINE_SPACING) + 1)
+//                        .foregroundStyle(nameColor!)
+//                        UnevenRoundedRectangle(cornerRadii: .init(
+//                            topLeading: self.radius,
+//                            bottomTrailing: self.radius), style: .continuous)
+//                        .inset(by: self.borderLineWidth)
+//                        .strokeBorder(insetColor!, lineWidth: self.borderLineWidth, antialiased: self.antialiased)
+//                        .frame(width: CGFloat(NAME_WIDTH), height: CGFloat(NOTEBOOK_LINE_SPACING) + 1)
+//                    }
                 }
             )
     }
