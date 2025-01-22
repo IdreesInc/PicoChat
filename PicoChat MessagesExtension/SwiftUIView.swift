@@ -122,6 +122,11 @@ enum Keyboard {
     case extra
 }
 
+enum InputState {
+    case normal
+    case settingName
+}
+
 struct SwiftUIView: View {
     @State private var grid: [[Int]] = Array(repeating: Array(repeating: 0, count: CANVAS_WIDTH), count: CANVAS_HEIGHT)
     @State private var lastTouchLocation: CGPoint? = nil
@@ -143,7 +148,7 @@ struct SwiftUIView: View {
     @State private var rainbowPen = false
     @State private var name = ["I", "d", "r", "e", "e", "s"]
     @State private var oldName: [String]? = nil
-    @State private var settingName = false
+    @State private var inputState = InputState.normal
     
     let conversation: MSConversation
     let keyboards = [
@@ -339,7 +344,7 @@ struct SwiftUIView: View {
                         .strokeBorder(colorTheme.border, lineWidth: 1, antialiased: true)
                     }
                     .onTapGesture {
-                        if !settingName {
+                        if inputState == InputState.normal {
                             beginNameChange()
                         }
                     }
@@ -350,7 +355,7 @@ struct SwiftUIView: View {
             view.gesture(
                 DragGesture(minimumDistance: 0, coordinateSpace: .local)
                     .onChanged { value in
-                        if settingName {
+                        if inputState == InputState.settingName {
                             return
                         }
                         if !drawing {
@@ -439,20 +444,20 @@ struct SwiftUIView: View {
     }
     
     func beginNameChange() {
-        settingName = true
+        inputState = InputState.settingName
         oldName = name.map { $0 }
         name = []
         takeSnapshot()
         clear()
-        // Enter your name and select a color!
-        let letters = ["E", "n", "t", "e", "r", " ", "y", "o", "u", "r", " ", "n", "a", "m", "e", " ", "a", "n", "d", " ", "s", "e", "l", "e", "c", "t", " ", "a", " ", "c", "o", "l", "o", "r", "!",]
+        // Type your name and select a color!
+        let letters = ["T", "y", "p", "e", " ", "y", "o", "u", "r", " ", "n", "a", "m", "e", " ", "a", "n", "d", " ", "s", "e", "l", "e", "c", "t", " ", "a", " ", "c", "o", "l", "o", "r", "!"]
         newLine()
         for letter in letters {
             type(glyph: letter, snapshot: false)
         }
         newLine()
         // Press ENTER to confirm or CLEAR to cancel
-        let enter = ["P", "r", "e", "s", "s", " ", "E", "N", "T", "E", "R", " ", "t", "o", " ", "c", "o", "n", "f", "i", "r", "m", " ", "o", "r", " ", "C", "L", "E", "A", "R", " ", "t", "o", " ", "c", "a", "n", "c", "e", "l", "!"]
+        let enter = ["P", "r", "e", "s", "s", " ", "E", "N", "T", "E", "R", " ", "t", "o", " ", "c", "o", "n", "f", "i", "r", "m", " ", "o", "r", " ", "C", "L", "E", "A", "R", " ", "t", "o", " ", "c", "a", "n", "c", "e", "l",]
         for letter in enter {
             type(glyph: letter, snapshot: false)
         }
@@ -474,13 +479,13 @@ struct SwiftUIView: View {
         if name.count == 0 {
             cancelNameChange()
         }
-        settingName = false
+        inputState = InputState.normal
         oldName = nil
         loadSnapshot()
     }
     
     func cancelNameChange() {
-        settingName = false
+        inputState = InputState.normal
         name = oldName.map { $0 } ?? []
         oldName = nil
         loadSnapshot()
@@ -561,7 +566,7 @@ struct SwiftUIView: View {
                 .onChanged { value in
                     heldGlyph = glyph
 
-                    if !settingName && !isControl && (abs(value.translation.width) > 5 || abs(value.translation.height) > 5) {
+                    if inputState == InputState.normal && !isControl && (abs(value.translation.width) > 5 || abs(value.translation.height) > 5) {
                         dragPosition = value.location.applying(.init(translationX: -canvasFrame.minX, y: -canvasFrame.minY))
                         let potDragX = floor(dragPosition.x / canvasFrame.width * CGFloat(CANVAS_WIDTH) - 3)
                         let potDragY = floor(dragPosition.y / canvasFrame.height * CGFloat(CANVAS_HEIGHT) - 15)
@@ -576,31 +581,34 @@ struct SwiftUIView: View {
                 }
                 .onEnded { value in
                     heldGlyph = nil
-
-                    if !settingName {
-                        if glyph == "SHIFT" {
-                            keyboard = keyboard == Keyboard.uppercase ? Keyboard.lowercase : Keyboard.uppercase
-                            capsLock = false
-                        } else if glyph == "CAPS" {
-                            capsLock = !capsLock
-                            if capsLock {
-                                keyboard = Keyboard.uppercase
-                            } else {
-                                keyboard = Keyboard.lowercase
-                            }
-                        } else if glyph == "ENTER" || glyph == "SMALL_ENTER" {
-                            newLine()
-                        } else if glyph == "BACKSPACE" || glyph == "SMALL_BACKSPACE" {
-                            loadSnapshot()
+                    
+                    switch glyph {
+                    case "SHIFT":
+                        keyboard = keyboard == Keyboard.uppercase ? Keyboard.lowercase : Keyboard.uppercase
+                        capsLock = false
+                    case "CAPS":
+                        capsLock = !capsLock
+                        if capsLock {
+                            keyboard = Keyboard.uppercase
                         } else {
-                            type(glyph: glyph, overrideX: dragX, overrideY: dragY)
+                            keyboard = Keyboard.lowercase
                         }
-                    } else {
-                        if glyph == "ENTER" || glyph == "SMALL_ENTER" {
+                    case "ENTER", "SMALL_ENTER":
+                        if inputState == InputState.normal {
+                            newLine()
+                        } else if inputState == InputState.settingName {
                             confirmNameChange()
-                        } else if glyph == "BACKSPACE" || glyph == "SMALL_BACKSPACE" {
+                        }
+                    case "BACKSPACE", "SMALL_BACKSPACE":
+                        if inputState == InputState.normal {
+                            loadSnapshot()
+                        } else if inputState == InputState.settingName {
                             removeGlyphFromName()
-                        } else {
+                        }
+                    default:
+                        if inputState == InputState.normal {
+                            type(glyph: glyph, overrideX: dragX, overrideY: dragY)
+                        } else if inputState == InputState.settingName {
                             addGlyphToName(glyph: glyph)
                         }
                     }
@@ -645,59 +653,50 @@ struct SwiftUIView: View {
     
     private func leftControls() -> some View {
         VStack(spacing: 0) {
-            // Pen
             leftButton(icon: "PEN", highlight: penType == PenType.pen, top: true)
                 .onTapGesture {
                     penType = PenType.pen
                 }
             Spacer()
-            // Eraser
             leftButton(icon: "ERASER", highlight: penType == PenType.eraser)
                 .onTapGesture {
                     penType = PenType.eraser
                 }
             Spacer()
-            // Big pen
             leftButton(icon: "BIG_PEN", highlight: penSize == PenSize.big)
                 .onTapGesture {
                     penSize = PenSize.big
                 }
             Spacer()
-            // Small pen
             leftButton(icon: "SMALL_PEN", highlight: penSize == PenSize.small)
                 .onTapGesture {
                     penSize = PenSize.small
                 }
             Spacer()
-            // Alphanumeric
             leftButton(icon: "ALPHANUMERIC", highlight: keyboard == Keyboard.lowercase || keyboard == Keyboard.uppercase)
                 .onTapGesture {
                     keyboard = Keyboard.lowercase
                     capsLock = false
                 }
             Spacer()
-            // Accent
             leftButton(icon: "ACCENT", highlight: keyboard == Keyboard.accent)
                 .onTapGesture {
                     keyboard = Keyboard.accent
                     capsLock = false
                 }
             Spacer()
-            // Symbols
             leftButton(icon: "SYMBOLS", highlight: keyboard == Keyboard.symbols)
                 .onTapGesture {
                     keyboard = Keyboard.symbols
                     capsLock = false
                 }
             Spacer()
-            // Emoji
             leftButton(icon: "EMOJI", highlight: keyboard == Keyboard.emoji)
                 .onTapGesture {
                     keyboard = Keyboard.emoji
                     capsLock = false
                 }
             Spacer()
-            // Extra emojis and symbols
             leftButton(icon: "EXTRA", highlight: keyboard == Keyboard.extra, bottom: true)
                 .onTapGesture {
                     keyboard = Keyboard.extra
@@ -763,19 +762,20 @@ struct SwiftUIView: View {
         VStack (spacing: 0){
             rightButton(top: true)
             .onTapGesture {
-                if !settingName {
+                if inputState == InputState.normal {
                     send()
                     clear()
-                } else {
+                } else if inputState == InputState.settingName {
                     confirmNameChange()
                 }
             }
             rightButton()
             rightButton(bottom: true)
             .onTapGesture {
-                if !settingName {
+                if inputState == InputState.normal {
+                    takeSnapshot()
                     clear()
-                } else {
+                } else if inputState == InputState.settingName {
                     cancelNameChange()
                 }
             }
@@ -952,20 +952,6 @@ fileprivate struct ModifierRoundedBorder: ViewModifier {
                         .inset(by: self.borderLineWidth)
                         .strokeBorder(self.insetColor!, lineWidth: self.borderLineWidth, antialiased: self.antialiased)
                     }
-//                    if nameColor != nil {
-//                        UnevenRoundedRectangle(cornerRadii: .init(
-//                            topLeading: self.radius,
-//                            bottomTrailing: self.radius), style: .continuous)
-//                        .inset(by: self.borderLineWidth)
-//                        .frame(width: 59, height: CGFloat(NOTEBOOK_LINE_SPACING) + 1)
-//                        .foregroundStyle(nameColor!)
-//                        UnevenRoundedRectangle(cornerRadii: .init(
-//                            topLeading: self.radius,
-//                            bottomTrailing: self.radius), style: .continuous)
-//                        .inset(by: self.borderLineWidth)
-//                        .strokeBorder(insetColor!, lineWidth: self.borderLineWidth, antialiased: self.antialiased)
-//                        .frame(width: CGFloat(NAME_WIDTH), height: CGFloat(NOTEBOOK_LINE_SPACING) + 1)
-//                    }
                 }
             )
     }
