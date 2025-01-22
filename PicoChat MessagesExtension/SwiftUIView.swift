@@ -23,6 +23,7 @@ let STARTING_X = MIN_NAME_WIDTH + 4 - 1
 let STARTING_Y = NOTEBOOK_LINE_SPACING - 3
 let MAX_NAME_LENGTH = 16
 let HORIZONTAL_MARGIN = 5
+let DEFAULT_NAME = ["P", "i", "c", "o", "C", "h", "a", "t"]
 
 let APP_BACKGROUND_COLOR = Color(hex: "f0f0f0")
 let BACKGROUND_COLOR = Color(hex: "fcfcfc")
@@ -146,7 +147,7 @@ struct SwiftUIView: View {
     @State private var penColorIndex = 0
     @State private var penLength = 0
     @State private var rainbowPen = false
-    @State private var name = ["I", "d", "r", "e", "e", "s"]
+    @State private var name = DEFAULT_NAME.map { $0 }
     @State private var oldName: [String]? = nil
     @State private var inputState = InputState.normal
     
@@ -446,7 +447,9 @@ struct SwiftUIView: View {
     func beginNameChange() {
         inputState = InputState.settingName
         oldName = name.map { $0 }
-        name = []
+        if name == DEFAULT_NAME {
+            name = []
+        }
         takeSnapshot()
         clear()
         // Type your name and select a color!
