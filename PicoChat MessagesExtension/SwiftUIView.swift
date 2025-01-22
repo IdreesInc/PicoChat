@@ -147,8 +147,10 @@ struct SwiftUIView: View {
     @State private var penColorIndex = 0
     @State private var penLength = 0
     @State private var rainbowPen = false
+    @State private var rainbowPenThemeIndex = 0
     @State private var name = DEFAULT_NAME.map { $0 }
     @State private var oldName: [String]? = nil
+    @State private var oldColor: ColorTheme? = nil
     @State private var inputState = InputState.normal
     
     let conversation: MSConversation
@@ -430,6 +432,12 @@ struct SwiftUIView: View {
                         drawing = false
                     }
             )
+            .allowsHitTesting(inputState != InputState.settingName)
+            .overlay(alignment: .bottom) {
+                if inputState == InputState.settingName {
+                    colorPicker()
+                }
+            }
             .padding(.top, VERTICAL_PADDING)
             .padding(.bottom, VERTICAL_PADDING)
             .padding(.leading, HORIZONTAL_PADDING)
@@ -451,9 +459,26 @@ struct SwiftUIView: View {
         }
     }
     
+    func colorPicker() -> some View {
+        let SQUARE_SIZE = 10.0
+        return HStack(spacing: 4) {
+            ForEach(0..<COLORS.count, id: \.self) { i in
+                ZStack {
+                }
+                .frame(width: SQUARE_SIZE, height: SQUARE_SIZE)
+                .background(COLORS[i].leftBackground)
+                .onTapGesture {
+                    colorTheme = COLORS[i]
+                }
+            }
+        }
+        .offset(y: CGFloat(-5 - NOTEBOOK_LINE_SPACING))
+    }
+    
     func beginNameChange() {
         inputState = InputState.settingName
         oldName = name.map { $0 }
+        oldColor = colorTheme
         if name == DEFAULT_NAME {
             name = []
         }
@@ -491,13 +516,16 @@ struct SwiftUIView: View {
         }
         inputState = InputState.normal
         oldName = nil
+        oldColor = nil
         loadSnapshot()
     }
     
     func cancelNameChange() {
         inputState = InputState.normal
         name = oldName.map { $0 } ?? []
+        colorTheme = oldColor ?? colorTheme
         oldName = nil
+        oldColor = nil
         loadSnapshot()
     }
     
@@ -666,9 +694,25 @@ struct SwiftUIView: View {
     
     private func leftControls() -> some View {
         VStack(spacing: 0) {
-            leftButton(icon: "PEN", highlight: penType == PenType.pen, top: true)
+            leftButton(icon: "PEN", highlight: penType == PenType.pen, top: true, colorOverride: rainbowPen ? COLORS[rainbowPenThemeIndex] : nil)
                 .onTapGesture {
-                    penType = PenType.pen
+                    if penType == PenType.pen {
+                        rainbowPen = !rainbowPen
+                    } else {
+                        penType = PenType.pen
+                        rainbowPen = false
+                    }
+                }
+                .onAppear {
+                    // Begin rainbow timer
+                    Timer.scheduledTimer(withTimeInterval: 0.175, repeats: true) { timer in
+                        if rainbowPen && penType == PenType.pen {
+                            rainbowPenThemeIndex += 1
+                            if rainbowPenThemeIndex >= COLORS.count {
+                                rainbowPenThemeIndex = 0
+                            }
+                        }
+                    }
                 }
             Spacer()
             leftButton(icon: "ERASER", highlight: penType == PenType.eraser)
@@ -723,16 +767,17 @@ struct SwiftUIView: View {
         .layoutPriority(1)
     }
     
-    private func leftButton(icon: String, highlight: Bool = false, top: Bool = false, bottom: Bool = false) -> some View {
+    private func leftButton(icon: String, highlight: Bool = false, top: Bool = false, bottom: Bool = false, colorOverride: ColorTheme? = nil) -> some View {
+        let colors = colorOverride ?? colorTheme
         let highlightColor = Color.white
         var strokeColor = LEFT_BUTTON_STROKE_COLOR
         var shadowColor = LEFT_BUTTON_SHADOW_COLOR
         var highlightMixColor = LEFT_BUTTON_HIGHLIGHT_MIX_COLOR
         
         if highlight {
-            strokeColor = colorTheme.leftStroke
-            shadowColor = colorTheme.border
-            highlightMixColor = colorTheme.background
+            strokeColor = colors.leftStroke
+            shadowColor = colors.border
+            highlightMixColor = colors.background
         }
         
         let pixels = Glyphs.iconPixels[icon] ?? Glyphs.iconPixels["BLANK"]!
@@ -767,8 +812,8 @@ struct SwiftUIView: View {
             .scaleEffect(1.4)
         }
         .frame(width: 22, height: 22)
-        .background(highlight ? colorTheme.leftBackground : LEFT_BUTTON_BACKGROUND_COLOR)
-        .roundedBorder(radius: 4, borderLineWidth: PIXEL_SIZE, borderColor: highlight ? colorTheme.leftBackground : LEFT_BUTTON_BACKGROUND_COLOR, insetColor: nil, topLeft: top, topRight: false, bottomLeft: bottom, bottomRight: false)
+        .background(highlight ? colors.leftBackground : LEFT_BUTTON_BACKGROUND_COLOR)
+        .roundedBorder(radius: 4, borderLineWidth: PIXEL_SIZE, borderColor: highlight ? colors.leftBackground : LEFT_BUTTON_BACKGROUND_COLOR, insetColor: nil, topLeft: top, topRight: false, bottomLeft: bottom, bottomRight: false)
     }
     
     private func rightControls() -> some View {
