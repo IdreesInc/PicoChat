@@ -181,6 +181,13 @@ struct SwiftUIView: View {
             ["%", "※", "〒", "#", "♭", "♪", "±", "$", "¢", "£", "\\", "SMALL_SPACE"],
             ["^", "°", "|", "／", "＼", "∞", "∴", "…", "™", "©", "®", "SPACER"]
         ],
+        Keyboard.emoji: [
+            ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "-", "="],
+            ["😊", "😠", "😟", "😑", "☼", "☁", "☂", "☃", "✉", "☎", "⏰", "SMALL_BACKSPACE"],
+            ["Ⓐ", "Ⓑ", "ⓧ", "Ⓨ", "Ⓛ", "Ⓡ", "➕", "♠", "♦", "♥", "♣", "SMALL_ENTER"],
+            ["[!]", "[?]", "+", "-", "☆", "○", "◇", "□", "△", "▽", "⦾", "SMALL_SPACE"],
+            ["⮕", "⬅", "⬆", "⬇", "★", "●", "◆", "■", "▲", "▼", "✕", "SPACER"]
+        ]
     ]
     
     var body: some View {
@@ -452,8 +459,8 @@ struct SwiftUIView: View {
         }
         takeSnapshot()
         clear()
-        // Type your name and select a color!
-        let letters = ["T", "y", "p", "e", " ", "y", "o", "u", "r", " ", "n", "a", "m", "e", " ", "a", "n", "d", " ", "s", "e", "l", "e", "c", "t", " ", "a", " ", "c", "o", "l", "o", "r", "!"]
+        // Type your name and select a color
+        let letters = ["T", "y", "p", "e", " ", "y", "o", "u", "r", " ", "n", "a", "m", "e", " ", "a", "n", "d", " ", "s", "e", "l", "e", "c", "t", " ", "a", " ", "c", "o", "l", "o", "r"]
         newLine()
         for letter in letters {
             type(glyph: letter, snapshot: false)
@@ -609,6 +616,9 @@ struct SwiftUIView: View {
                             removeGlyphFromName()
                         }
                     default:
+                        if !capsLock && keyboard == Keyboard.uppercase {
+                            keyboard = Keyboard.lowercase
+                        }
                         if inputState == InputState.normal {
                             type(glyph: glyph, overrideX: dragX, overrideY: dragY)
                         } else if inputState == InputState.settingName {
