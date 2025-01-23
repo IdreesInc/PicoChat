@@ -99,6 +99,18 @@ struct ColorTheme {
     }
 }
 
+extension ColorTheme: Equatable {
+    static func == (lhs: ColorTheme, rhs: ColorTheme) -> Bool {
+        return lhs.background == rhs.background
+        && lhs.border == rhs.border
+        && lhs.leftBackground == rhs.leftBackground
+        && lhs.leftStroke == rhs.leftStroke
+        && lhs.keyPressedText == rhs.keyPressedText
+        && lhs.controlPressedBackground == rhs.controlPressedBackground
+        && lhs.keyPressedBackground == rhs.keyPressedBackground
+    }
+}
+
 struct Snapshot {
     var grid: [[Int]]
     var lastGlyphLocation: [Int]
@@ -192,6 +204,27 @@ struct SwiftUIView: View {
         ]
     ]
     
+    func storeSettings() {
+        print("Saving settings")
+        let encodedName = name.joined(separator: "␟")
+        let colorIndex = COLORS.firstIndex { $0 == colorTheme } ?? 0
+        UserDefaults.standard.set(encodedName, forKey: "name")
+        UserDefaults.standard.set(colorIndex, forKey: "colorIndex")
+    }
+    
+    func loadSettings() {
+        print("Loading settings")
+        if let encodedName = UserDefaults.standard.string(forKey: "name") {
+            let retrievedName = encodedName.components(separatedBy: "␟")
+            if retrievedName.count > 0 && retrievedName.filter({ Glyphs.glyphPixels[$0] == nil }).count == 0 {
+                name = retrievedName
+            }
+        }
+        if let colorIndex = UserDefaults.standard.object(forKey: "colorIndex") as? Int {
+            colorTheme = COLORS[colorIndex % COLORS.count]
+        }
+    }
+    
     var body: some View {
         // Whole view
         VStack {
@@ -253,6 +286,9 @@ struct SwiftUIView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(APP_BACKGROUND_COLOR)
         .coordinateSpace(name: "screen")
+        .onAppear {
+            loadSettings()
+        }
     }
     
     func getAndIncrementInk() -> Int {
@@ -518,6 +554,7 @@ struct SwiftUIView: View {
         oldName = nil
         oldColor = nil
         loadSnapshot()
+        storeSettings()
     }
     
     func cancelNameChange() {
