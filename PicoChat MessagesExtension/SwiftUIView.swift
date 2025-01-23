@@ -8,6 +8,7 @@
 
 import SwiftUI
 import Messages
+import TinyMoon
 
 let SCALE = 1.5
 let CANVAS_WIDTH = 234
@@ -78,6 +79,8 @@ let PEN_COLORS = [
     Color(hex: "#0034ff"),
     Color(hex: "#3400ff"),
 ]
+
+let moonPhase = TinyMoon.calculateMoonPhase().emoji
 
 struct ColorTheme {
     var background: Color
@@ -799,7 +802,7 @@ struct SwiftUIView: View {
                     capsLock = false
                 }
             Spacer()
-            leftButton(icon: "WAXING_CRESCENT", highlight: keyboard == Keyboard.extra, bottom: true)
+            leftButton(icon: moonPhase, highlight: keyboard == Keyboard.extra, bottom: true)
                 .onTapGesture {
                     keyboard = Keyboard.extra
                     capsLock = false

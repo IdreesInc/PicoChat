@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		4A80EF882D35EF06009D41B0 /* PicoChat MessagesExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 4A80EF872D35EF06009D41B0 /* PicoChat MessagesExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		4A80EF8D2D35EF06009D41B0 /* Messages.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4A80EF8C2D35EF06009D41B0 /* Messages.framework */; };
+		4AAFD8D92D42F9040092AF14 /* TinyMoon in Frameworks */ = {isa = PBXBuildFile; productRef = 4AAFD8D82D42F9040092AF14 /* TinyMoon */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -73,6 +74,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				4A80EF8D2D35EF06009D41B0 /* Messages.framework in Frameworks */,
+				4AAFD8D92D42F9040092AF14 /* TinyMoon in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -148,6 +150,7 @@
 			);
 			name = "PicoChat MessagesExtension";
 			packageProductDependencies = (
+				4AAFD8D82D42F9040092AF14 /* TinyMoon */,
 			);
 			productName = "PicoChat MessagesExtension";
 			productReference = 4A80EF872D35EF06009D41B0 /* PicoChat MessagesExtension.appex */;
@@ -181,6 +184,9 @@
 			);
 			mainGroup = 4A80EF772D35EF03009D41B0;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				4AAFD8D72D42F9040092AF14 /* XCRemoteSwiftPackageReference "TinyMoon" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 4A80EF7F2D35EF03009D41B0 /* Products */;
 			projectDirPath = "";
@@ -477,6 +483,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		4AAFD8D72D42F9040092AF14 /* XCRemoteSwiftPackageReference "TinyMoon" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/mannylopez/TinyMoon.git";
+			requirement = {
+				kind = exactVersion;
+				version = 3.0.1;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		4AAFD8D82D42F9040092AF14 /* TinyMoon */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 4AAFD8D72D42F9040092AF14 /* XCRemoteSwiftPackageReference "TinyMoon" */;
+			productName = TinyMoon;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 4A80EF782D35EF03009D41B0 /* Project object */;
 }
