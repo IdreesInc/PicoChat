@@ -657,6 +657,8 @@ struct SwiftUIView: View {
                 .onEnded { value in
                     heldGlyph = nil
                     
+                    var typedGlyph = glyph
+                    
                     switch glyph {
                     case "SHIFT":
                         keyboard = keyboard == Keyboard.uppercase ? Keyboard.lowercase : Keyboard.uppercase
@@ -680,14 +682,17 @@ struct SwiftUIView: View {
                         } else if inputState == InputState.settingName {
                             removeGlyphFromName()
                         }
+                    case "SPACE", "SMALL_SPACE":
+                        typedGlyph = " "
+                        fallthrough
                     default:
                         if !capsLock && keyboard == Keyboard.uppercase {
                             keyboard = Keyboard.lowercase
                         }
                         if inputState == InputState.normal {
-                            type(glyph: glyph, overrideX: dragX, overrideY: dragY)
+                            type(glyph: typedGlyph, overrideX: dragX, overrideY: dragY)
                         } else if inputState == InputState.settingName {
-                            addGlyphToName(glyph: glyph)
+                            addGlyphToName(glyph: typedGlyph)
                         }
                     }
                     
@@ -707,10 +712,6 @@ struct SwiftUIView: View {
     func type(glyph: String, overrideX: Int? = nil, overrideY: Int? = nil, snapshot: Bool = true) {
         var text = glyph
         var textWidth = (Glyphs.glyphPixels[glyph] ?? Glyphs.glyphPixels["?"]!)[0].count
-        if (glyph == "SPACE" || glyph == "SMALL_SPACE") {
-            text = " "
-            textWidth = Glyphs.glyphPixels[" "]![0].count
-        }
         var nextX = lastGlyphLocation[0] + 1
         var nextY = lastGlyphLocation[1]
         if (overrideX != nil && overrideY != nil) {
