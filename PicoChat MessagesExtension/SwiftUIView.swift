@@ -201,7 +201,11 @@ struct SwiftUIView: View {
             ["Ⓐ", "Ⓑ", "ⓧ", "Ⓨ", "Ⓛ", "Ⓡ", "➕", "♠", "♦", "♥", "♣", "SMALL_ENTER"],
             ["[!]", "[?]", "+", "-", "☆", "○", "◇", "□", "△", "▽", "⦾", "SMALL_SPACE"],
             ["⮕", "⬅", "⬆", "⬇", "★", "●", "◆", "■", "▲", "▼", "✕", "SPACER"]
-        ]
+        ],
+        Keyboard.extra: [
+            ["🌑", "🌒", "🌓", "🌔", "🌕", "🌖", "🌗", "🌘"],
+            ["✨", "☕", "🎏", "🐌"],
+        ],
     ]
     
     func storeSettings() {
@@ -710,8 +714,8 @@ struct SwiftUIView: View {
     }
     
     func type(glyph: String, overrideX: Int? = nil, overrideY: Int? = nil, snapshot: Bool = true) {
-        var text = glyph
-        var textWidth = (Glyphs.glyphPixels[glyph] ?? Glyphs.glyphPixels["?"]!)[0].count
+        let text = glyph
+        let textWidth = (Glyphs.glyphPixels[glyph] ?? Glyphs.glyphPixels["?"]!)[0].count
         var nextX = lastGlyphLocation[0] + 1
         var nextY = lastGlyphLocation[1]
         if (overrideX != nil && overrideY != nil) {
