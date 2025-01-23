@@ -203,8 +203,11 @@ struct SwiftUIView: View {
             ["⮕", "⬅", "⬆", "⬇", "★", "●", "◆", "■", "▲", "▼", "✕", "SPACER"]
         ],
         Keyboard.extra: [
-            ["🌑", "🌒", "🌓", "🌔", "🌕", "🌖", "🌗", "🌘"],
-            ["✨", "☕", "🎏", "🐌"],
+            ["🌑", "🌒", "🌓", "🌔", "🌕", "🌖", "🌗", "🌘", "✨", "☕", "🎏", "🐌"],
+            ["SPACER", "SMALL_BACKSPACE"],
+            ["SPACER", "SMALL_ENTER"],
+            ["SPACER", "SMALL_SPACE"],
+            ["SPACER"],
         ],
     ]
     
@@ -796,7 +799,7 @@ struct SwiftUIView: View {
                     capsLock = false
                 }
             Spacer()
-            leftButton(icon: "EXTRA", highlight: keyboard == Keyboard.extra, bottom: true)
+            leftButton(icon: "WAXING_CRESCENT", highlight: keyboard == Keyboard.extra, bottom: true)
                 .onTapGesture {
                     keyboard = Keyboard.extra
                     capsLock = false
@@ -985,6 +988,9 @@ func getTypedPixels(x: Int, y: Int, glyph: String) -> [[Int]] {
     var index = 0
     for row in 0..<height {
         for col in 0..<width {
+            if pixels[row][col] == 0 {
+                continue
+            }
             returnedPixels[index][0] = x + col
             returnedPixels[index][1] = y + row - height + yMod
             returnedPixels[index][2] = pixels[row][col]
