@@ -206,11 +206,11 @@ struct SwiftUIView: View {
             ["⮕", "⬅", "⬆", "⬇", "★", "●", "◆", "■", "▲", "▼", "✕", "SPACER"]
         ],
         Keyboard.extra: [
-            ["🌑", "🌒", "🌓", "🌔", "🌕", "🌖", "🌗", "🌘", "✨", "☕", "🎏", "🐌"],
-            ["SPACER", "SMALL_BACKSPACE"],
-            ["SPACER", "SMALL_ENTER"],
+            ["♈️", "♉️", "♊️", "♋️", "♌️", "♍️", "♎️", "♏️", "♐️", "♑️", "♒️", "♓️"],
+            ["✨", "☕", "🎏", "🐌", "JUNIMO", "⛩", "🌸", "🌼", "💽", "💾", "🍙", "SMALL_BACKSPACE"],
+            ["PYORO", "🐈", "🧋", "SMALL_ENTER"],
             ["SPACER", "SMALL_SPACE"],
-            ["SPACER"],
+            ["🌑", "🌒", "🌓", "🌔", "🌕", "🌖", "🌗", "🌘"],
         ],
     ]
     
@@ -370,7 +370,7 @@ struct SwiftUIView: View {
                         let nameWidths = name.map { Glyphs.glyphPixels[$0]![0].count }
                         var x = 6
                         for i in 0..<name.count {
-                            let pixels = getTypedPixels(x: x, y: NOTEBOOK_LINE_SPACING - 4, glyph: name[i])
+                            let pixels = getTypedPixels(x: x, y: NOTEBOOK_LINE_SPACING - 3, glyph: name[i])
                             let width = nameWidths[i]
                             for pixel in pixels {
                                 let pixelX = pixel[0]
@@ -383,7 +383,7 @@ struct SwiftUIView: View {
                             x += width + 1
                         }
                                 
-                    }.frame(width: max(CGFloat(MIN_NAME_WIDTH), calculateNameWidth() + 12), height: CGFloat(NOTEBOOK_LINE_SPACING) + 1)
+                    }.frame(width: max(CGFloat(MIN_NAME_WIDTH), calculateNameWidth() + 12), height: CGFloat(NOTEBOOK_LINE_SPACING) + 1.5)
                     .background(alignment: .topLeading) {
                         // iOS 16 doesn't allow for fill and stroke at the same time, so have to make two shapes
                         // Fill
