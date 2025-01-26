@@ -154,6 +154,7 @@ struct SwiftUIView: View {
     @State private var colorTheme = COLORS[Int.random(in: 0..<COLORS.count)]
     @State private var lastGlyphLocation = [STARTING_X, STARTING_Y]
     @State private var heldGlyph: String? = nil
+    @State private var heldButton: String? = nil
     @State private var drawing = false
     @State private var canvasFrame: CGRect = .zero
     @State private var dragPosition: CGPoint = .zero
@@ -867,35 +868,62 @@ struct SwiftUIView: View {
     
     private func rightControls() -> some View {
         VStack (spacing: 0){
-            rightButton(icon: "SEND", top: true)
-            .onTapGesture {
-                if inputState == InputState.normal {
-                    send()
-                    clear()
-                } else if inputState == InputState.settingName {
-                    confirmNameChange()
+            rightButton(icon: "SEND", highlight: heldButton == "SEND", top: true)
+            .gesture(
+                DragGesture(minimumDistance: 0, coordinateSpace: .named("screen"))
+                .onChanged { value in
+                    heldButton = "SEND"
                 }
-            }
-            rightButton(icon: "SAVE")
-            rightButton(icon: "CLEAR", bottom: true)
-            .onTapGesture {
-                if inputState == InputState.normal {
-                    takeSnapshot()
-                    clear()
-                } else if inputState == InputState.settingName {
-                    cancelNameChange()
+                .onEnded { value in
+                    heldButton = nil
+                    if inputState == InputState.normal {
+                        send()
+                        clear()
+                    } else if inputState == InputState.settingName {
+                        confirmNameChange()
+                    }
                 }
-            }
+            )
+            rightButton(icon: "SAVE", highlight: heldButton == "SAVE")
+            .gesture(
+                DragGesture(minimumDistance: 0, coordinateSpace: .named("screen"))
+                .onChanged { value in
+                    heldButton = "SAVE"
+                }
+                .onEnded { value in
+                    heldButton = nil
+                    if inputState == InputState.normal {
+                        takeSnapshot()
+                        clear()
+                    } else if inputState == InputState.settingName {
+                        cancelNameChange()
+                    }
+                }
+            )
+            rightButton(icon: "CLEAR", highlight: heldButton == "CLEAR", bottom: true)
+            .gesture(
+                DragGesture(minimumDistance: 0, coordinateSpace: .named("screen"))
+                .onChanged { value in
+                    heldButton = "CLEAR"
+                }
+                .onEnded { value in
+                    heldButton = nil
+                    if inputState == InputState.normal {
+                        takeSnapshot()
+                        clear()
+                    } else if inputState == InputState.settingName {
+                        cancelNameChange()
+                    }
+                }
+            )
         }
         .frame(height: CONTROLS_HEIGHT)
     }
     
-    private func rightButton(icon: String, top: Bool = false, bottom: Bool = false) -> some View {
-        let colors = colorTheme
+    private func rightButton(icon: String, highlight: Bool = false, top: Bool = false, bottom: Bool = false) -> some View {
         let highlightColor = Color.white
-        var strokeColor = RIGHT_BUTTON_STROKE_COLOR
-        var shadowColor = LEFT_BUTTON_SHADOW_COLOR
-        var highlightMixColor = LEFT_BUTTON_HIGHLIGHT_MIX_COLOR
+        let strokeColor = RIGHT_BUTTON_STROKE_COLOR
+        let fillColor = highlight ? colorTheme.leftBackground : LEFT_BUTTON_SHADOW_COLOR
         
         let pixels = Glyphs.iconPixels[icon] ?? Glyphs.iconPixels["BLANK"]!
         let width = pixels[0].count
@@ -916,9 +944,7 @@ struct SwiftUIView: View {
                             } else if pixels[y][x] == 2 {
                                 color = highlightColor
                             } else if pixels[y][x] == 3 {
-                                color = shadowColor
-                            } else if pixels[y][x] == 4 {
-                                color = highlightMixColor
+                                color = fillColor
                             }
                             context.fill(Path(CGRect(x: x, y: y, width: 1, height: 1)), with: .color(color))
                         }
