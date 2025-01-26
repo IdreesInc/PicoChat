@@ -287,7 +287,7 @@ struct SwiftUIView: View {
                 }
                 .background(MODAL_BACKGROUND_COLOR)
                 .frame(width: SCALED_CANVAS_WIDTH + 2 * modalPadding)
-                .roundedBorder(radius: 11, borderLineWidth: PIXEL_SIZE, borderColor: DARK_BORDER_COLOR, topRight: false, bottomRight: false)
+                .roundedBorder(radius: CORNER_RADIUS + modalPadding, borderLineWidth: PIXEL_SIZE, borderColor: DARK_BORDER_COLOR, topRight: false, bottomRight: false)
                 .offset(x: PIXEL_SIZE * SCALE)
             }
             .frame(maxWidth: .infinity)
