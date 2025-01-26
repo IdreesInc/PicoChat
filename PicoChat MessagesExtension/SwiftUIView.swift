@@ -24,6 +24,9 @@ let STARTING_X = MIN_NAME_WIDTH + 4 - 1
 let STARTING_Y = NOTEBOOK_LINE_SPACING - 3
 let MAX_NAME_LENGTH = 16
 let HORIZONTAL_MARGIN = 5
+let KEY_WIDTH = 23.0
+let KEY_CANVAS_SCALE = SCALE - 0.1
+let RIGHT_BUTTON_WIDTH = 55.0
 let DEFAULT_NAME = ["P", "i", "c", "o", "C", "h", "a", "t"]
 
 let APP_BACKGROUND_COLOR = Color(hex: "f0f0f0")
@@ -588,12 +591,11 @@ struct SwiftUIView: View {
     }
     
     private func key(glyph: String) -> some View {
-        let NORMAL_KEY_WIDTH = 23.0
         let isControl = Glyphs.controls[glyph] != nil
-        var keyWidth = NORMAL_KEY_WIDTH * (Glyphs.controls[glyph] ?? 1)
+        var keyWidth = KEY_WIDTH * (Glyphs.controls[glyph] ?? 1)
         var keyBgColor = isControl ? CONTROL_BUTTON_COLOR : KEYBOARD_BUTTON_COLOR
         var keyTextColor = isControl ? CONTROL_TEXT_COLOR : .black
-        var canvasScale = 1.4
+        var canvasScale = KEY_CANVAS_SCALE
         
         let pixels = Glyphs.glyphPixels[glyph] ?? Glyphs.glyphPixels["?"]!
         let adjustments = Glyphs.adjustments[glyph] ?? [0, 0]
@@ -604,7 +606,7 @@ struct SwiftUIView: View {
         let yMod = MAX_HEIGHT - BOTTOM_SPACE - height + adjustments[1]
         
         if glyph == "HALF_SPACER" {
-            keyWidth = floor(NORMAL_KEY_WIDTH / 2)
+            keyWidth = floor(KEY_WIDTH / 2)
             keyBgColor = .clear
             keyTextColor = .clear
         } else if glyph == "SPACER" {
@@ -614,7 +616,7 @@ struct SwiftUIView: View {
             keyBgColor = capsLock ? colorTheme.controlPressedBackground : keyBgColor
             keyTextColor = capsLock ? colorTheme.keyPressedText : keyTextColor
         } else if glyph == "SMALL_SPACE" {
-            canvasScale = 1.2
+            canvasScale = KEY_CANVAS_SCALE - 0.2
         }
         
         if glyph == heldGlyph {
@@ -954,7 +956,7 @@ struct SwiftUIView: View {
             .frame(width: CGFloat(width), height: CGFloat(height))
             .scaleEffect(1.6)
         }
-        .frame(width: 55)
+        .frame(width: RIGHT_BUTTON_WIDTH)
         .frame(maxHeight: .infinity)
         .background(RIGHT_BUTTON_COLOR)
         .roundedBorder(radius: CORNER_RADIUS * PIXEL_SIZE, borderLineWidth: PIXEL_SIZE, borderColor: DARK_BORDER_COLOR, insetColor: KEYBOARD_BACKGROUND_COLOR, topLeft: top, topRight: false, bottomLeft: bottom, bottomRight: false)
