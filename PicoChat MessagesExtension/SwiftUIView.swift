@@ -19,7 +19,7 @@ let SCALED_CANVAS_WIDTH = Double(CANVAS_WIDTH) * SCALE
 let SCALED_CANVAS_HEIGHT = Double(CANVAS_HEIGHT) * SCALE
 let PIXEL_SIZE = SCALE
 let CORNER_RADIUS = 6.0
-let CONTROLS_HEIGHT = SCALED_CANVAS_HEIGHT - PIXEL_SIZE * 5
+let CONTROLS_HEIGHT = SCALED_CANVAS_HEIGHT
 let STARTING_X = MIN_NAME_WIDTH + 4 - 1
 let STARTING_Y = NOTEBOOK_LINE_SPACING - 3
 let MAX_NAME_LENGTH = 16
@@ -38,6 +38,7 @@ let LEFT_BUTTON_STROKE_COLOR = Color(hex: "535353")
 let LEFT_BUTTON_SHADOW_COLOR = Color(hex: "6c6c6c")
 let LEFT_BUTTON_BACKGROUND_COLOR = Color(hex: "b5b5b5")
 let LEFT_BUTTON_HIGHLIGHT_MIX_COLOR = Color(hex: "dbdbdb")
+let RIGHT_BUTTON_STROKE_COLOR = Color(hex: "acacac")
 let CONTROL_TEXT_COLOR = Color(hex: "5b5b5c")
 
 let VERTICAL_PADDING = (Double(CANVAS_HEIGHT) * SCALE - Double(CANVAS_HEIGHT)) / 2
@@ -866,7 +867,7 @@ struct SwiftUIView: View {
     
     private func rightControls() -> some View {
         VStack (spacing: 0){
-            rightButton(top: true)
+            rightButton(icon: "SEND", top: true)
             .onTapGesture {
                 if inputState == InputState.normal {
                     send()
@@ -875,8 +876,8 @@ struct SwiftUIView: View {
                     confirmNameChange()
                 }
             }
-            rightButton()
-            rightButton(bottom: true)
+            rightButton(icon: "SAVE")
+            rightButton(icon: "CLEAR", bottom: true)
             .onTapGesture {
                 if inputState == InputState.normal {
                     takeSnapshot()
@@ -889,8 +890,43 @@ struct SwiftUIView: View {
         .frame(height: CONTROLS_HEIGHT)
     }
     
-    private func rightButton(top: Bool = false, bottom: Bool = false) -> some View {
-        ZStack {
+    private func rightButton(icon: String, top: Bool = false, bottom: Bool = false) -> some View {
+        let colors = colorTheme
+        let highlightColor = Color.white
+        var strokeColor = RIGHT_BUTTON_STROKE_COLOR
+        var shadowColor = LEFT_BUTTON_SHADOW_COLOR
+        var highlightMixColor = LEFT_BUTTON_HIGHLIGHT_MIX_COLOR
+        
+        let pixels = Glyphs.iconPixels[icon] ?? Glyphs.iconPixels["BLANK"]!
+        let width = pixels[0].count
+        let height = pixels.count
+        
+        return ZStack {
+            Canvas(
+                opaque: false,
+                colorMode: .linear,
+                rendersAsynchronously: false
+            ) { context, size in
+                for y in 0..<height {
+                    for x in 0..<width {
+                        if pixels[y][x] != 0 {
+                            var color = Color.clear
+                            if pixels[y][x] == 1 {
+                                color = strokeColor
+                            } else if pixels[y][x] == 2 {
+                                color = highlightColor
+                            } else if pixels[y][x] == 3 {
+                                color = shadowColor
+                            } else if pixels[y][x] == 4 {
+                                color = highlightMixColor
+                            }
+                            context.fill(Path(CGRect(x: x, y: y, width: 1, height: 1)), with: .color(color))
+                        }
+                    }
+                }
+            }
+            .frame(width: CGFloat(width), height: CGFloat(height))
+            .scaleEffect(1.6)
         }
         .frame(width: 55)
         .frame(maxHeight: .infinity)
