@@ -19,7 +19,7 @@ let SCALED_CANVAS_WIDTH = Double(CANVAS_WIDTH) * SCALE
 let SCALED_CANVAS_HEIGHT = Double(CANVAS_HEIGHT) * SCALE
 let PIXEL_SIZE = SCALE
 let CORNER_RADIUS = 6.0
-let CONTROLS_HEIGHT = SCALED_CANVAS_HEIGHT
+//let CONTROLS_HEIGHT = SCALED_CANVAS_HEIGHT
 let STARTING_X = MIN_NAME_WIDTH + 4 - 1
 let STARTING_Y = NOTEBOOK_LINE_SPACING - 3
 let MAX_NAME_LENGTH = 16
@@ -27,6 +27,7 @@ let HORIZONTAL_MARGIN = 5
 let KEY_WIDTH = 23.0
 let KEY_CANVAS_SCALE = SCALE - 0.1
 let RIGHT_BUTTON_WIDTH = 55.0
+let RIGHT_BUTTON_CANVAS_SCALE = 1.6
 let DEFAULT_NAME = ["P", "i", "c", "o", "C", "h", "a", "t"]
 
 let APP_BACKGROUND_COLOR = Color(hex: "f0f0f0")
@@ -241,11 +242,16 @@ struct SwiftUIView: View {
     }
     
     var body: some View {
+        
+        let TOP_BOTTOM_MARGIN = 15.0
+        
         // Whole view
         VStack {
-            Spacer()
-                .layoutPriority(2)
-                .frame(maxHeight: 15)
+//            Spacer()
+//                .layoutPriority(2)
+//                .frame(minHeight: 0)
+//                .frame(maxHeight: TOP_BOTTOM_MARGIN)
+//                .background(.red)
 
             // App
             HStack(spacing: 0) {
@@ -254,7 +260,7 @@ struct SwiftUIView: View {
                 
                 // Canvas and Keyboard Modal
                 let modalPadding: CGFloat = 7
-                VStack {
+                VStack(spacing: 0) {
                     // Canvas
                     VStack {
                         // Interactive canvas
@@ -263,6 +269,9 @@ struct SwiftUIView: View {
                     .padding(.top, modalPadding)
                     .padding(.leading, modalPadding)
                     .padding(.trailing, modalPadding)
+                    
+                    Spacer()
+                    .frame(height: modalPadding)
                     
                     // Keyboard and controls
                     let currentKb = keyboards[keyboard] ?? keyboards[Keyboard.lowercase]!
@@ -277,7 +286,8 @@ struct SwiftUIView: View {
                                 }
                             }
                         }
-                        .frame(height: CONTROLS_HEIGHT)
+//                        .frame(height: CONTROLS_HEIGHT)
+                        .frame(maxHeight: .infinity)
                         .frame(maxWidth: .infinity)
                         .background(KEYBOARD_BACKGROUND_COLOR)
                         .roundedBorder(radius: CORNER_RADIUS * PIXEL_SIZE, borderLineWidth: PIXEL_SIZE, borderColor: DARK_BORDER_COLOR, insetColor: KEYBOARD_BACKGROUND_COLOR)
@@ -293,10 +303,13 @@ struct SwiftUIView: View {
                 .roundedBorder(radius: CORNER_RADIUS + modalPadding, borderLineWidth: PIXEL_SIZE, borderColor: DARK_BORDER_COLOR, topRight: false, bottomRight: false)
                 .offset(x: PIXEL_SIZE * SCALE)
             }
-            .frame(maxWidth: .infinity)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
             
-            Spacer()
-                .layoutPriority(2)
+//            Spacer()
+//                .layoutPriority(2)
+//                .frame(minHeight: 0)
+//                .frame(maxHeight: TOP_BOTTOM_MARGIN)
+//                .background(.red)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(APP_BACKGROUND_COLOR)
@@ -766,52 +779,52 @@ struct SwiftUIView: View {
                         }
                     }
                 }
-            Spacer()
+            Spacer().frame(minHeight: 0)
             leftButton(icon: "ERASER", highlight: penType == PenType.eraser)
                 .onTapGesture {
                     penType = PenType.eraser
                 }
-            Spacer()
+            Spacer().frame(minHeight: 0)
             leftButton(icon: "BIG_PEN", highlight: penSize == PenSize.big)
                 .onTapGesture {
                     penSize = PenSize.big
                 }
-            Spacer()
+            Spacer().frame(minHeight: 0)
             leftButton(icon: "SMALL_PEN", highlight: penSize == PenSize.small)
                 .onTapGesture {
                     penSize = PenSize.small
                 }
-            Spacer()
+            Spacer().frame(minHeight: 0)
             leftButton(icon: "ALPHANUMERIC", highlight: keyboard == Keyboard.lowercase || keyboard == Keyboard.uppercase)
                 .onTapGesture {
                     keyboard = Keyboard.lowercase
                     capsLock = false
                 }
-            Spacer()
+            Spacer().frame(minHeight: 0)
             leftButton(icon: "ACCENT", highlight: keyboard == Keyboard.accent)
                 .onTapGesture {
                     keyboard = Keyboard.accent
                     capsLock = false
                 }
-            Spacer()
+            Spacer().frame(minHeight: 0)
             leftButton(icon: "SYMBOLS", highlight: keyboard == Keyboard.symbols)
                 .onTapGesture {
                     keyboard = Keyboard.symbols
                     capsLock = false
                 }
-            Spacer()
+            Spacer().frame(minHeight: 0)
             leftButton(icon: "EMOJI", highlight: keyboard == Keyboard.emoji)
                 .onTapGesture {
                     keyboard = Keyboard.emoji
                     capsLock = false
                 }
-            Spacer()
+            Spacer().frame(minHeight: 0)
             leftButton(icon: moonPhase, highlight: keyboard == Keyboard.extra, bottom: true)
                 .onTapGesture {
                     keyboard = Keyboard.extra
                     capsLock = false
                 }
-            Spacer()
+            Spacer().frame(minHeight: 0)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding(.top, PIXEL_SIZE)
@@ -919,7 +932,8 @@ struct SwiftUIView: View {
                 }
             )
         }
-        .frame(height: CONTROLS_HEIGHT)
+//        .frame(height: CONTROLS_HEIGHT)
+        .frame(maxHeight: .infinity)
     }
     
     private func rightButton(icon: String, highlight: Bool = false, top: Bool = false, bottom: Bool = false) -> some View {
@@ -954,7 +968,7 @@ struct SwiftUIView: View {
                 }
             }
             .frame(width: CGFloat(width), height: CGFloat(height))
-            .scaleEffect(1.6)
+            .scaleEffect(RIGHT_BUTTON_CANVAS_SCALE)
         }
         .frame(width: RIGHT_BUTTON_WIDTH)
         .frame(maxHeight: .infinity)
