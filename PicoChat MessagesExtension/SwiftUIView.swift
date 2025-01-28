@@ -44,6 +44,8 @@ let MAX_NAME_LENGTH = 16
 let HORIZONTAL_MARGIN = 5
 let KEY_WIDTH = 23.0
 let RIGHT_BUTTON_WIDTH = 52.0
+let MAX_HEIGHT = UIScreen.main.bounds.width * 0.8
+
 let DEFAULT_NAME = ["P", "i", "c", "o", "C", "h", "a", "t"]
 
 let APP_BACKGROUND_COLOR = Color(hex: "f0f0f0")
@@ -258,11 +260,12 @@ struct SwiftUIView: View {
     }
     
     var body: some View {
+        let modalPadding: CGFloat = 7
+
         // Whole view
         VStack {
             // App
             HStack(spacing: 0) {
-                let modalPadding: CGFloat = 7
                 
                 Spacer()
                     .frame(minWidth: 0)
@@ -327,7 +330,7 @@ struct SwiftUIView: View {
                 .roundedBorder(radius: CORNER_RADIUS + modalPadding, borderLineWidth: PIXEL_SIZE, borderColor: DARK_BORDER_COLOR, topRight: false, bottomRight: false)
                 .offset(x: PIXEL_SIZE * SCALE)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .frame(maxWidth: .infinity, maxHeight: MAX_HEIGHT)
             .padding(.top, TOP_MARGIN)
             .padding(.bottom, BOTTOM_MARGIN)
         }
