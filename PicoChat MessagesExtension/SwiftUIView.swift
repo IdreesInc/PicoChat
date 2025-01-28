@@ -261,7 +261,7 @@ struct SwiftUIView: View {
     
     var body: some View {
         let modalPadding: CGFloat = 7
-
+        
         // Whole view
         VStack {
             // App
@@ -269,12 +269,12 @@ struct SwiftUIView: View {
                 
                 Spacer()
                     .frame(minWidth: 0)
-
+                
                 // Left buttons
                 leftControls()
                     .padding(.leading, 3)
                     .padding(.trailing, 3)
-
+                
                 Spacer()
                     .frame(minWidth: 0)
                 
@@ -290,7 +290,7 @@ struct SwiftUIView: View {
                     .padding(.trailing, modalPadding)
                     
                     Spacer()
-                    .frame(height: modalPadding)
+                        .frame(height: modalPadding)
                     
                     // Keyboard and controls
                     let currentKb = keyboards[keyboard] ?? keyboards[Keyboard.lowercase]!
@@ -356,7 +356,7 @@ struct SwiftUIView: View {
         }
         return penType == PenType.eraser ? 0 : 1
     }
-        
+    
     private func chatCanvas(interactive: Bool) -> some View {
         Canvas(
             opaque: true,
@@ -380,7 +380,7 @@ struct SwiftUIView: View {
             if dragX != nil && dragY != nil && heldGlyph != nil {
                 overlayPixels = getTypedPixels(x: dragX!, y: dragY!, glyph: heldGlyph!)
             }
-                        
+            
             // Draw each pixel
             for y in 0..<grid.count {
                 for x in 0..<grid[y].count {
@@ -403,28 +403,28 @@ struct SwiftUIView: View {
         .frame(width: CGFloat(CANVAS_WIDTH), height: CGFloat(CANVAS_HEIGHT))
         .roundedBorder(radius: CORNER_RADIUS, borderLineWidth: 1, borderColor: .white, insetColor: colorTheme.border, nameColor: colorTheme.background)
         .overlay(alignment: .topLeading, content: {
-                ZStack {
-                    Canvas(opaque: false,
-                           colorMode: .linear,
-                           rendersAsynchronously: false
-                    ) { context, size in
-                        let nameWidths = name.map { Glyphs.glyphPixels[$0]![0].count }
-                        var x = 6
-                        for i in 0..<name.count {
-                            let pixels = getTypedPixels(x: x, y: NOTEBOOK_LINE_SPACING - 3, glyph: name[i])
-                            let width = nameWidths[i]
-                            for pixel in pixels {
-                                let pixelX = pixel[0]
-                                let pixelY = pixel[1]
-                                let value = pixel[2]
-                                if value != 0 {
-                                    context.fill(Path(CGRect(x: pixelX, y: pixelY, width: 1, height: 1)), with: .color(colorTheme.border))
-                                }
+            ZStack {
+                Canvas(opaque: false,
+                       colorMode: .linear,
+                       rendersAsynchronously: false
+                ) { context, size in
+                    let nameWidths = name.map { Glyphs.glyphPixels[$0]![0].count }
+                    var x = 6
+                    for i in 0..<name.count {
+                        let pixels = getTypedPixels(x: x, y: NOTEBOOK_LINE_SPACING - 3, glyph: name[i])
+                        let width = nameWidths[i]
+                        for pixel in pixels {
+                            let pixelX = pixel[0]
+                            let pixelY = pixel[1]
+                            let value = pixel[2]
+                            if value != 0 {
+                                context.fill(Path(CGRect(x: pixelX, y: pixelY, width: 1, height: 1)), with: .color(colorTheme.border))
                             }
-                            x += width + 1
                         }
-                                
-                    }.frame(width: max(CGFloat(MIN_NAME_WIDTH), calculateNameWidth() + 12), height: CGFloat(NOTEBOOK_LINE_SPACING) + 1.5)
+                        x += width + 1
+                    }
+                    
+                }.frame(width: max(CGFloat(MIN_NAME_WIDTH), calculateNameWidth() + 12), height: CGFloat(NOTEBOOK_LINE_SPACING) + 1.5)
                     .background(alignment: .topLeading) {
                         // iOS 16 doesn't allow for fill and stroke at the same time, so have to make two shapes
                         // Fill
@@ -445,8 +445,8 @@ struct SwiftUIView: View {
                             beginNameChange()
                         }
                     }
-                }
             }
+        }
         )
         .applyIf(interactive) { view in
             view.gesture(
@@ -472,7 +472,7 @@ struct SwiftUIView: View {
                             // Bresenham's Line Algorithm
                             let from = lastTouch
                             let to = value.location
-
+                            
                             let x0 = Int(from.x)
                             let y0 = Int(from.y)
                             let x1 = Int(to.x)
@@ -511,7 +511,7 @@ struct SwiftUIView: View {
                                 }
                             }
                         }
-
+                        
                         lastTouchLocation = value.location
                     }
                     .onEnded { _ in
@@ -539,10 +539,10 @@ struct SwiftUIView: View {
         }
         .applyIf(!interactive) { view in
             view
-            .padding(.top, 25)
-            .padding(.bottom, 25)
-            .padding(.leading, 7)
-            .padding(.trailing, 7)
+                .padding(.top, 25)
+                .padding(.bottom, 25)
+                .padding(.leading, 7)
+                .padding(.trailing, 7)
         }
     }
     
@@ -689,7 +689,7 @@ struct SwiftUIView: View {
             DragGesture(minimumDistance: 0, coordinateSpace: .named("screen"))
                 .onChanged { value in
                     heldGlyph = glyph
-
+                    
                     if inputState == InputState.normal && !isControl && (abs(value.translation.width) > 5 || abs(value.translation.height) > 5) {
                         dragPosition = value.location.applying(.init(translationX: -canvasFrame.minX, y: -canvasFrame.minY))
                         let potDragX = floor(dragPosition.x / canvasFrame.width * CGFloat(CANVAS_WIDTH) - 3)
@@ -906,55 +906,55 @@ struct SwiftUIView: View {
     private func rightControls() -> some View {
         VStack (spacing: 0){
             rightButton(icon: "SEND", highlight: heldButton == "SEND", top: true)
-            .gesture(
-                DragGesture(minimumDistance: 0, coordinateSpace: .named("screen"))
-                .onChanged { value in
-                    heldButton = "SEND"
-                }
-                .onEnded { value in
-                    heldButton = nil
-                    if inputState == InputState.normal {
-                        send()
-                        clear()
-                    } else if inputState == InputState.settingName {
-                        confirmNameChange()
-                    }
-                }
-            )
+                .gesture(
+                    DragGesture(minimumDistance: 0, coordinateSpace: .named("screen"))
+                        .onChanged { value in
+                            heldButton = "SEND"
+                        }
+                        .onEnded { value in
+                            heldButton = nil
+                            if inputState == InputState.normal {
+                                send()
+                                clear()
+                            } else if inputState == InputState.settingName {
+                                confirmNameChange()
+                            }
+                        }
+                )
             rightButton(icon: "SAVE", highlight: heldButton == "SAVE")
-            .gesture(
-                DragGesture(minimumDistance: 0, coordinateSpace: .named("screen"))
-                .onChanged { value in
-                    heldButton = "SAVE"
-                }
-                .onEnded { value in
-                    heldButton = nil
-                    if inputState == InputState.normal {
-                        takeSnapshot()
-                        clear()
-                    } else if inputState == InputState.settingName {
-                        cancelNameChange()
-                    }
-                }
-            )
+                .gesture(
+                    DragGesture(minimumDistance: 0, coordinateSpace: .named("screen"))
+                        .onChanged { value in
+                            heldButton = "SAVE"
+                        }
+                        .onEnded { value in
+                            heldButton = nil
+                            if inputState == InputState.normal {
+                                takeSnapshot()
+                                clear()
+                            } else if inputState == InputState.settingName {
+                                cancelNameChange()
+                            }
+                        }
+                )
             rightButton(icon: "CLEAR", highlight: heldButton == "CLEAR", bottom: true)
-            .gesture(
-                DragGesture(minimumDistance: 0, coordinateSpace: .named("screen"))
-                .onChanged { value in
-                    heldButton = "CLEAR"
-                }
-                .onEnded { value in
-                    heldButton = nil
-                    if inputState == InputState.normal {
-                        takeSnapshot()
-                        clear()
-                    } else if inputState == InputState.settingName {
-                        cancelNameChange()
-                    }
-                }
-            )
+                .gesture(
+                    DragGesture(minimumDistance: 0, coordinateSpace: .named("screen"))
+                        .onChanged { value in
+                            heldButton = "CLEAR"
+                        }
+                        .onEnded { value in
+                            heldButton = nil
+                            if inputState == InputState.normal {
+                                takeSnapshot()
+                                clear()
+                            } else if inputState == InputState.settingName {
+                                cancelNameChange()
+                            }
+                        }
+                )
         }
-//        .frame(height: CONTROLS_HEIGHT)
+        //        .frame(height: CONTROLS_HEIGHT)
         .frame(maxHeight: .infinity)
     }
     
@@ -1139,7 +1139,7 @@ fileprivate struct ModifierRoundedBorder: ViewModifier {
                     bottomLeadingRadius: self.bottomLeft ? self.radius : 0,
                     bottomTrailingRadius: self.bottomRight ? self.radius : 0,
                     topTrailingRadius: self.topRight ? self.radius : 0
-            ))
+                ))
             .overlay(
                 ZStack(alignment: .topLeading) {
                     UnevenRoundedRectangle(
