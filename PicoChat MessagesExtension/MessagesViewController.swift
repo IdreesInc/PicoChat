@@ -12,6 +12,8 @@ import SwiftUI
 @objc(MessagesViewController)
 class MessagesViewController: MSMessagesAppViewController {
     
+    private var presentationStyleWrapper = PresentationStyleWrapper()
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -45,7 +47,7 @@ class MessagesViewController: MSMessagesAppViewController {
         super.willBecomeActive(with: conversation)
         
         // The conversation is guaranteed to be active here
-        let child = UIHostingController(rootView: SwiftUIView(conversation: conversation))
+        let child = UIHostingController(rootView: SwiftUIView(presentationStyleWrapper: presentationStyleWrapper, conversation: conversation))
 
         // Add the hosting controller's view
         self.view.addSubview(child.view)
@@ -94,8 +96,10 @@ class MessagesViewController: MSMessagesAppViewController {
     
     override func didTransition(to presentationStyle: MSMessagesAppPresentationStyle) {
         // Called after the extension transitions to a new presentation style.
-    
+
         // Use this method to finalize any behaviors associated with the change in presentation style.
+        
+        presentationStyleWrapper.presentationStyle = presentationStyle
     }
 
 }

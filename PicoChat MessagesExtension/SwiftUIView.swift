@@ -137,7 +137,8 @@ extension ColorTheme: Equatable {
     }
 }
 
-struct Snapshot {
+struct Snapshot: Identifiable {
+    let id = UUID()
     var grid: [[Int]]
     var lastGlyphLocation: [Int]
 }
@@ -166,7 +167,15 @@ enum InputState {
     case settingName
 }
 
+enum BoardType {
+    case interactive
+    case export
+    case capture
+}
+
 struct SwiftUIView: View {
+    @ObservedObject var presentationStyleWrapper: PresentationStyleWrapper
+    
     @State private var grid: [[Int]] = Array(repeating: Array(repeating: 0, count: CANVAS_WIDTH), count: CANVAS_HEIGHT)
     @State private var lastTouchLocation: CGPoint? = nil
     @State private var penType = PenType.pen
@@ -191,6 +200,8 @@ struct SwiftUIView: View {
     @State private var oldName: [String]? = nil
     @State private var oldColor: ColorTheme? = nil
     @State private var inputState = InputState.normal
+    
+    @State private var favorites = [Snapshot]()
     
     let conversation: MSConversation
     let keyboards = [
@@ -264,6 +275,7 @@ struct SwiftUIView: View {
         
         // Whole view
         VStack {
+            
             // App
             HStack(spacing: 0) {
                 
@@ -283,7 +295,7 @@ struct SwiftUIView: View {
                     // Canvas
                     VStack {
                         // Interactive canvas
-                        chatCanvas(interactive: true)
+                        board(BoardType.interactive, grid: grid)
                     }
                     .padding(.top, modalPadding)
                     .padding(.leading, modalPadding)
@@ -333,6 +345,30 @@ struct SwiftUIView: View {
             .frame(maxWidth: .infinity, maxHeight: MAX_HEIGHT)
             .padding(.top, TOP_MARGIN)
             .padding(.bottom, BOTTOM_MARGIN)
+            .layoutPriority(2)
+            
+            if presentationStyleWrapper.presentationStyle == .expanded {
+                List {
+                    // Favorites
+                    ForEach(favorites.reversed()) { favorite in
+                        board(BoardType.capture, grid: favorite.grid)
+                            .swipeActions(edge: .trailing) {
+                                Button(role: .destructive) { print ("Delete") } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
+                            }
+                            .listRowBackground(Color.clear)
+                            .listRowSeparator(.hidden)
+                            .listRowSpacing(0)
+                            .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 10, trailing: 0))
+                    }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(.clear)
+                .scrollContentBackground(.hidden)
+                .layoutPriority(1)
+            }
+        
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(APP_BACKGROUND_COLOR)
@@ -357,7 +393,7 @@ struct SwiftUIView: View {
         return penType == PenType.eraser ? 0 : 1
     }
     
-    private func chatCanvas(interactive: Bool) -> some View {
+    private func board(_ type: BoardType, grid: [[Int]]) -> some View {
         Canvas(
             opaque: true,
             colorMode: .linear,
@@ -366,7 +402,7 @@ struct SwiftUIView: View {
             context.fill(Path(CGRect(origin: .zero, size: size)), with: .color(BACKGROUND_COLOR))
             
             // Draw notebook lines
-            if (interactive) {
+            if (type == BoardType.interactive) {
                 for y in stride(from: 0, to: CANVAS_HEIGHT, by: NOTEBOOK_LINE_SPACING) {
                     context.stroke(Path { path in
                         path.move(to: CGPoint(x: 0, y: y))
@@ -440,15 +476,17 @@ struct SwiftUIView: View {
                         .inset(by: 1)
                         .strokeBorder(colorTheme.border, lineWidth: 1, antialiased: true)
                     }
-                    .onTapGesture {
-                        if inputState == InputState.normal {
-                            beginNameChange()
-                        }
+                    .applyIf(type == BoardType.interactive) { view in
+                        view
+                            .onTapGesture {
+                                if inputState == InputState.normal {
+                                    beginNameChange()
+                                }
+                            }
                     }
             }
-        }
-        )
-        .applyIf(interactive) { view in
+        })
+        .applyIf(type == BoardType.interactive) { view in
             view.gesture(
                 DragGesture(minimumDistance: 0, coordinateSpace: .local)
                     .onChanged { value in
@@ -525,19 +563,22 @@ struct SwiftUIView: View {
                     colorPicker()
                 }
             }
-            .padding(.top, VERTICAL_PADDING)
-            .padding(.bottom, VERTICAL_PADDING)
-            .padding(.leading, HORIZONTAL_PADDING)
-            .padding(.trailing, HORIZONTAL_PADDING)
-            .scaleEffect(CGFloat(SCALE))
-            .background(GeometryReader { proxy in
-                Color.clear
-                    .onAppear() {
-                        canvasFrame = proxy.frame(in: .named("screen"))
-                    }
-            })
         }
-        .applyIf(!interactive) { view in
+        .applyIf(type != BoardType.export) { view in
+            view
+                .padding(.top, VERTICAL_PADDING)
+                .padding(.bottom, VERTICAL_PADDING)
+                .padding(.leading, HORIZONTAL_PADDING)
+                .padding(.trailing, HORIZONTAL_PADDING)
+                .scaleEffect(CGFloat(SCALE))
+                .background(GeometryReader { proxy in
+                    Color.clear
+                        .onAppear() {
+                            canvasFrame = proxy.frame(in: .named("screen"))
+                        }
+                })
+        }
+        .applyIf(type == BoardType.export) { view in
             view
                 .padding(.top, 25)
                 .padding(.bottom, 25)
@@ -930,10 +971,7 @@ struct SwiftUIView: View {
                         .onEnded { value in
                             heldButton = nil
                             if inputState == InputState.normal {
-                                takeSnapshot()
-                                clear()
-                            } else if inputState == InputState.settingName {
-                                cancelNameChange()
+                                saveFavorite()
                             }
                         }
                 )
@@ -1000,7 +1038,7 @@ struct SwiftUIView: View {
     
     private func send() {
         takeSnapshot()
-        let renderer = ImageRenderer(content: chatCanvas(interactive: false))
+        let renderer = ImageRenderer(content: board(BoardType.export, grid: grid))
         renderer.scale = 5
         if let image = renderer.uiImage {
             let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString).appendingPathExtension("png")
@@ -1016,7 +1054,7 @@ struct SwiftUIView: View {
     }
     
     private func sendAsSticker() {
-        let renderer = ImageRenderer(content: chatCanvas(interactive: false))
+        let renderer = ImageRenderer(content: board(BoardType.export, grid: grid))
         if let image = renderer.uiImage {
             let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString).appendingPathExtension("png")
             if let data = image.pngData() {
@@ -1067,9 +1105,9 @@ struct SwiftUIView: View {
         print("Snapshots: \(snapshots.count)")
     }
     
-    func loadSnapshot() {
+    func loadSnapshot(specific: Snapshot? = nil) {
         print("Loading snapshot...")
-        if let snapshot = snapshots.popLast() {
+        if let snapshot = specific ?? snapshots.popLast() {
             let gridClone = snapshot.grid.map { $0.map { $0 } }
             let lastGlyphLocationClone = snapshot.lastGlyphLocation.map { $0 }
             grid = gridClone
@@ -1077,6 +1115,16 @@ struct SwiftUIView: View {
             print("Snapshots: \(snapshots.count)")
         } else {
             print("No snapshot to load")
+        }
+    }
+    
+    func saveFavorite() {
+        print("Saving favorite...")
+        let gridClone = grid.map { $0.map { $0 } }
+        let lastGlyphLocationClone = lastGlyphLocation.map { $0 }
+        favorites.append(Snapshot(grid: gridClone, lastGlyphLocation: lastGlyphLocationClone))
+        if snapshots.count > MAX_SNAPSHOTS {
+            snapshots.removeFirst()
         }
     }
 }
