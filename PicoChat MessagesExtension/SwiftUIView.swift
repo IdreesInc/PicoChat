@@ -10,7 +10,26 @@ import SwiftUI
 import Messages
 import TinyMoon
 
-let SCALE = 1.5
+struct Sizing {
+    var scale: CGFloat
+    var keyboardOverride: CGFloat? = nil
+    var topMargin: CGFloat
+    var bottomMargin: CGFloat
+}
+
+let SIZINGS = [
+    "normal": Sizing(scale: 1.5 * UIScreen.main.bounds.width / 393, keyboardOverride: nil, topMargin: -2, bottomMargin: -10),
+    "small": Sizing(scale: 1.15, keyboardOverride: 280, topMargin: -4, bottomMargin: 3),
+]
+
+let sizing = UIScreen.main.bounds.height > 700 ? SIZINGS["normal"]! : SIZINGS["small"]!
+
+let SCALE = sizing.scale
+let KEYBOARD_OVERRIDE: CGFloat? = sizing.keyboardOverride
+let TOP_MARGIN = sizing.topMargin
+let BOTTOM_MARGIN = sizing.bottomMargin
+let KEY_CANVAS_SCALE = 1.3
+let RIGHT_BUTTON_CANVAS_SCALE = 1.6
 let CANVAS_WIDTH = 234
 let NOTEBOOK_LINE_SPACING = 18
 let CANVAS_HEIGHT = NOTEBOOK_LINE_SPACING * 5 + 1
@@ -19,15 +38,12 @@ let SCALED_CANVAS_WIDTH = Double(CANVAS_WIDTH) * SCALE
 let SCALED_CANVAS_HEIGHT = Double(CANVAS_HEIGHT) * SCALE
 let PIXEL_SIZE = SCALE
 let CORNER_RADIUS = 6.0
-//let CONTROLS_HEIGHT = SCALED_CANVAS_HEIGHT
 let STARTING_X = MIN_NAME_WIDTH + 4 - 1
 let STARTING_Y = NOTEBOOK_LINE_SPACING - 3
 let MAX_NAME_LENGTH = 16
 let HORIZONTAL_MARGIN = 5
 let KEY_WIDTH = 23.0
-let KEY_CANVAS_SCALE = SCALE - 0.1
-let RIGHT_BUTTON_WIDTH = 55.0
-let RIGHT_BUTTON_CANVAS_SCALE = 1.6
+let RIGHT_BUTTON_WIDTH = 52.0
 let DEFAULT_NAME = ["P", "i", "c", "o", "C", "h", "a", "t"]
 
 let APP_BACKGROUND_COLOR = Color(hex: "f0f0f0")
@@ -242,24 +258,24 @@ struct SwiftUIView: View {
     }
     
     var body: some View {
-        
-        let TOP_BOTTOM_MARGIN = 15.0
-        
         // Whole view
         VStack {
-//            Spacer()
-//                .layoutPriority(2)
-//                .frame(minHeight: 0)
-//                .frame(maxHeight: TOP_BOTTOM_MARGIN)
-//                .background(.red)
-
             // App
             HStack(spacing: 0) {
+                let modalPadding: CGFloat = 7
+                
+                Spacer()
+                    .frame(minWidth: 0)
+
                 // Left buttons
                 leftControls()
+                    .padding(.leading, 3)
+                    .padding(.trailing, 3)
+
+                Spacer()
+                    .frame(minWidth: 0)
                 
                 // Canvas and Keyboard Modal
-                let modalPadding: CGFloat = 7
                 VStack(spacing: 0) {
                     // Canvas
                     VStack {
@@ -277,39 +293,43 @@ struct SwiftUIView: View {
                     let currentKb = keyboards[keyboard] ?? keyboards[Keyboard.lowercase]!
                     HStack(spacing: 4) {
                         // Keyboard
-                        VStack(spacing: 1) {
-                            ForEach(currentKb, id: \.self) { row in
-                                HStack(spacing: 1) {
-                                    ForEach(row, id: \.self) { glyph in
+                        Grid(horizontalSpacing: 1, verticalSpacing: 1) {
+                            ForEach(currentKb.indices, id: \.self) { rowIndex in
+                                GridRow {
+                                    ForEach(currentKb[rowIndex], id: \.self) { glyph in
                                         key(glyph: glyph)
                                     }
                                 }
+                                .frame(maxWidth: .infinity)
+                                .frame(maxHeight: .infinity)
                             }
                         }
-//                        .frame(height: CONTROLS_HEIGHT)
+                        .padding(.leading, PIXEL_SIZE)
+                        .padding(.trailing, PIXEL_SIZE)
+                        .padding(.top, PIXEL_SIZE)
+                        .padding(.bottom, PIXEL_SIZE)
                         .frame(maxHeight: .infinity)
                         .frame(maxWidth: .infinity)
+                        .frame(minWidth: KEYBOARD_OVERRIDE)
+                        .layoutPriority(12)
                         .background(KEYBOARD_BACKGROUND_COLOR)
                         .roundedBorder(radius: CORNER_RADIUS * PIXEL_SIZE, borderLineWidth: PIXEL_SIZE, borderColor: DARK_BORDER_COLOR, insetColor: KEYBOARD_BACKGROUND_COLOR)
                         
                         // Right buttons
                         rightControls()
-                }
+                    }
                     .padding(.bottom, modalPadding)
                     .padding(.leading, modalPadding)
                 }
                 .background(MODAL_BACKGROUND_COLOR)
-                .frame(width: SCALED_CANVAS_WIDTH + 2 * modalPadding)
+                .frame(minWidth: KEYBOARD_OVERRIDE == nil ? SCALED_CANVAS_WIDTH + 2 * modalPadding : nil)
+                .frame(maxHeight: .infinity)
                 .roundedBorder(radius: CORNER_RADIUS + modalPadding, borderLineWidth: PIXEL_SIZE, borderColor: DARK_BORDER_COLOR, topRight: false, bottomRight: false)
                 .offset(x: PIXEL_SIZE * SCALE)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            
-//            Spacer()
-//                .layoutPriority(2)
-//                .frame(minHeight: 0)
-//                .frame(maxHeight: TOP_BOTTOM_MARGIN)
-//                .background(.red)
+            .padding(.top, TOP_MARGIN)
+            .padding(.bottom, BOTTOM_MARGIN)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(APP_BACKGROUND_COLOR)
@@ -605,7 +625,6 @@ struct SwiftUIView: View {
     
     private func key(glyph: String) -> some View {
         let isControl = Glyphs.controls[glyph] != nil
-        var keyWidth = KEY_WIDTH * (Glyphs.controls[glyph] ?? 1)
         var keyBgColor = isControl ? CONTROL_BUTTON_COLOR : KEYBOARD_BUTTON_COLOR
         var keyTextColor = isControl ? CONTROL_TEXT_COLOR : .black
         var canvasScale = KEY_CANVAS_SCALE
@@ -619,7 +638,6 @@ struct SwiftUIView: View {
         let yMod = MAX_HEIGHT - BOTTOM_SPACE - height + adjustments[1]
         
         if glyph == "HALF_SPACER" {
-            keyWidth = floor(KEY_WIDTH / 2)
             keyBgColor = .clear
             keyTextColor = .clear
         } else if glyph == "SPACER" {
@@ -660,9 +678,10 @@ struct SwiftUIView: View {
             .frame(width: CGFloat(width), height: CGFloat(MAX_HEIGHT))
             .scaleEffect(canvasScale)
         }
+        .frame(maxWidth: .infinity)
         .frame(maxHeight: .infinity)
-        .frame(width: keyWidth)
         .background(keyBgColor)
+        .gridCellColumns(Glyphs.controls[glyph] ?? 2)
         .gesture(
             DragGesture(minimumDistance: 0, coordinateSpace: .named("screen"))
                 .onChanged { value in
@@ -826,7 +845,7 @@ struct SwiftUIView: View {
                 }
             Spacer().frame(minHeight: 0)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .frame(maxHeight: .infinity)
         .padding(.top, PIXEL_SIZE)
         .padding(.bottom, 15)
         .layoutPriority(1)
