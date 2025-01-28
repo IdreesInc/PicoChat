@@ -197,14 +197,14 @@ struct SwiftUIView: View {
             ["HALF_SPACER", "q", "w", "e", "r", "t", "y", "u", "i", "o", "p", "BACKSPACE"],
             ["CAPS", "a", "s", "d", "f", "g", "h", "j", "k", "l", "ENTER"],
             ["SHIFT", "z", "x", "c", "v", "b", "n", "m", ",", ".", "/"],
-            [";", "’", "SPACE", "[", "]"]
+            ["SPACER", ";", "’", "SPACE", "[", "]"]
         ],
         Keyboard.uppercase: [
             ["!", "@", "#", "$", "%", "^", "&", "*", "(", ")", "_", "+"],
             ["HALF_SPACER", "Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P", "BACKSPACE"],
             ["CAPS", "A", "S", "D", "F", "G", "H", "J", "K", "L", "ENTER"],
             ["SHIFT", "Z", "X", "C", "V", "B", "N", "M", "<", ">", "?"],
-            [":", "~", "SPACE", "{", "}"]
+            ["SPACER", ":", "~", "SPACE", "{", "}"]
         ],
         Keyboard.accent: [
             ["à", "á", "â", "ä", "è", "é", "ê", "ë", "ì", "í", "î", "SPACER"],
@@ -231,7 +231,7 @@ struct SwiftUIView: View {
             ["♈️", "♉️", "♊️", "♋️", "♌️", "♍️", "♎️", "♏️", "♐️", "♑️", "♒️", "♓️"],
             ["✨", "☕", "🎏", "🐌", "JUNIMO", "⛩", "🌸", "🌼", "💽", "💾", "🍙", "SMALL_BACKSPACE"],
             ["PYORO", "🐈", "🧋", "🐸", "💔", "❄", "🪱", "🪦", "💀", "🦙", "🔥", "SMALL_ENTER"],
-            ["☹️", ":P", "🫤", "🙃", "uwu", "🐇", "SMALL_SPACE"],
+            ["☹️", ":P", "🫤", "🙃", "uwu", "🐇", "SPACER", "SPACER", "SPACER", "SPACER", "SPACER", "SMALL_SPACE"],
             ["🌑", "🌒", "🌓", "🌔", "🌕", "🌖", "🌗", "🌘"],
         ],
     ]

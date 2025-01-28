@@ -86,7 +86,7 @@ struct Glyphs {
         "CAPS": 2,
         "ENTER": 4,
         "BACKSPACE": 3,
-        "SPACE": 10,
+        "SPACE": 12,
         "SMALL_ENTER": 2,
         "SMALL_BACKSPACE": 2,
         "SMALL_SPACE": 2,
