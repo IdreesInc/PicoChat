@@ -20,7 +20,7 @@ struct Sizing {
 
 let SIZINGS = [
     "normal": Sizing(scale: 1.5 * UIScreen.main.bounds.width / 393, keyboardOverride: nil, topMargin: -2, bottomMargin: -10, rightIconPadding: 8),
-    "small": Sizing(scale: 1.15, keyboardOverride: 280, topMargin: -4, bottomMargin: 3, rightIconPadding: 3)
+    "small": Sizing(scale: 1.15, keyboardOverride: 280, topMargin: -4, bottomMargin: 3, rightIconPadding: 5)
 ]
 
 let sizing = UIScreen.main.bounds.height > 700 ? SIZINGS["normal"]! : SIZINGS["small"]!
@@ -205,6 +205,7 @@ struct SwiftUIView: View {
     
     @State private var favorites = [Snapshot]()
     @State private var favoritesAlertPresented = false
+    @State private var landscapeMode = UIScreen.main.bounds.width > UIScreen.main.bounds.height
     
     let conversation: MSConversation
     let keyboards = [
@@ -291,7 +292,12 @@ struct SwiftUIView: View {
         let modalPadding: CGFloat = 7
         
         // Whole view
-        VStack {
+        let layout = landscapeMode ? AnyLayout(HStackLayout(spacing: 0)) : AnyLayout(VStackLayout(spacing: 0))
+        layout {
+            // Favorites in landscape
+            if landscapeMode {
+                favoritesView()
+            }
             
             // App
             HStack(spacing: 0) {
@@ -303,9 +309,6 @@ struct SwiftUIView: View {
                 leftControls()
                     .padding(.leading, 3)
                     .padding(.trailing, 3)
-                
-//                Spacer()
-//                    .frame(minWidth: 0)
                 
                 // Canvas and Keyboard Modal
                 VStack(spacing: 0) {
@@ -363,42 +366,13 @@ struct SwiftUIView: View {
             .padding(.top, TOP_MARGIN)
             .padding(.bottom, BOTTOM_MARGIN)
             .layoutPriority(2)
+            .zIndex(2)
             
-            if presentationStyleWrapper.presentationStyle == .expanded {
-//                Text("Favorites")
-//                    .font(.title)
-                    List {
-                        // Favorites
-                        ForEach(favorites.reversed()) { favorite in
-                            HStack(spacing: 0) {
-                                Spacer()
-                                    .frame(minWidth: 0)
-                                board(BoardType.capture, grid: favorite.grid)
-                                    .swipeActions(edge: .trailing) {
-                                        Button(role: .destructive) { deleteFavorite(favorite: favorite) } label: {
-                                            Label("Delete", systemImage: "trash")
-                                        }
-                                    }
-                                    .onTapGesture {
-                                        takeSnapshot()
-                                        loadSnapshot(specific: favorite)
-                                    }
-                                Spacer()
-                                    .frame(minWidth: 0)
-                            }
-                            .frame(maxWidth: .infinity)
-                            .listRowBackground(Color.clear)
-                            .listRowSeparator(.hidden)
-                            .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                            .padding(0)
-                        }
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .scrollContentBackground(.hidden)
-                    .layoutPriority(1)
-                    .listRowSpacing(10)
+            // Favorites in portrait
+            if !landscapeMode && presentationStyleWrapper.presentationStyle == .expanded {
+                favoritesView()
+                    .padding(.top, modalPadding)
             }
-        
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(APP_BACKGROUND_COLOR)
@@ -406,6 +380,48 @@ struct SwiftUIView: View {
         .onAppear {
             loadSettings()
         }
+        .onGeometryChange(for: CGRect.self) { proxy in
+           proxy.frame(in: .global)
+       } action: { newValue in
+           landscapeMode = UIScreen.main.bounds.width > UIScreen.main.bounds.height
+       }
+    }
+    
+    func favoritesView() -> some View {
+        List {
+            // Favorites
+            ForEach(favorites.reversed()) { favorite in
+                HStack(spacing: 0) {
+                    Spacer()
+                        .frame(minWidth: 0)
+                    board(BoardType.capture, grid: favorite.grid)
+                        .swipeActions(edge: .trailing) {
+                            Button(role: .destructive) { deleteFavorite(favorite: favorite) } label: {
+                                Label("Delete", systemImage: "trash")
+                            }
+                        }
+                        .onTapGesture {
+                            takeSnapshot()
+                            loadSnapshot(specific: favorite)
+                        }
+                        .applyIf(landscapeMode) { view in
+                            view.scaleEffect(0.9)
+                        }
+                    Spacer()
+                        .frame(minWidth: 0)
+                }
+                .frame(maxWidth: .infinity)
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+                .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                .padding(0)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .frame(minWidth: 100)
+        .scrollContentBackground(.hidden)
+        .listRowSpacing(10)
+        .layoutPriority(2)
     }
     
     func getAndIncrementInk() -> Int {
@@ -430,6 +446,7 @@ struct SwiftUIView: View {
             rendersAsynchronously: false
         ) { context, size in
             context.fill(Path(CGRect(origin: .zero, size: size)), with: .color(BACKGROUND_COLOR))
+            print("\(UIScreen.main.bounds.width) \(UIScreen.main.bounds.height)")
             
             // Draw notebook lines
             if (type == BoardType.interactive) {
