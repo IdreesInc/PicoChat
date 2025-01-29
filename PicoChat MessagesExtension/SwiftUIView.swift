@@ -15,11 +15,12 @@ struct Sizing {
     var keyboardOverride: CGFloat? = nil
     var topMargin: CGFloat
     var bottomMargin: CGFloat
+    var rightIconPadding: CGFloat
 }
 
 let SIZINGS = [
-    "normal": Sizing(scale: 1.5 * UIScreen.main.bounds.width / 393, keyboardOverride: nil, topMargin: -2, bottomMargin: -10),
-    "small": Sizing(scale: 1.15, keyboardOverride: 280, topMargin: -4, bottomMargin: 3),
+    "normal": Sizing(scale: 1.5 * UIScreen.main.bounds.width / 393, keyboardOverride: nil, topMargin: -2, bottomMargin: -10, rightIconPadding: 8),
+    "small": Sizing(scale: 1.15, keyboardOverride: 280, topMargin: -4, bottomMargin: 3, rightIconPadding: 3)
 ]
 
 let sizing = UIScreen.main.bounds.height > 700 ? SIZINGS["normal"]! : SIZINGS["small"]!
@@ -28,6 +29,7 @@ let SCALE = sizing.scale
 let KEYBOARD_OVERRIDE: CGFloat? = sizing.keyboardOverride
 let TOP_MARGIN = sizing.topMargin
 let BOTTOM_MARGIN = sizing.bottomMargin
+let RIGHT_ICON_PADDING = sizing.rightIconPadding
 let KEY_CANVAS_SCALE = 1.3
 let RIGHT_BUTTON_CANVAS_SCALE = 1.6
 let CANVAS_WIDTH = 234
@@ -302,8 +304,8 @@ struct SwiftUIView: View {
                     .padding(.leading, 3)
                     .padding(.trailing, 3)
                 
-                Spacer()
-                    .frame(minWidth: 0)
+//                Spacer()
+//                    .frame(minWidth: 0)
                 
                 // Canvas and Keyboard Modal
                 VStack(spacing: 0) {
@@ -365,35 +367,36 @@ struct SwiftUIView: View {
             if presentationStyleWrapper.presentationStyle == .expanded {
 //                Text("Favorites")
 //                    .font(.title)
-                HStack(spacing: 0) {
-                    Spacer()
-                        .frame(minWidth: 0)
                     List {
                         // Favorites
                         ForEach(favorites.reversed()) { favorite in
-                            board(BoardType.capture, grid: favorite.grid)
-                                .swipeActions(edge: .trailing) {
-                                    Button(role: .destructive) { deleteFavorite(favorite: favorite) } label: {
-                                        Label("Delete", systemImage: "trash")
+                            HStack(spacing: 0) {
+                                Spacer()
+                                    .frame(minWidth: 0)
+                                board(BoardType.capture, grid: favorite.grid)
+                                    .swipeActions(edge: .trailing) {
+                                        Button(role: .destructive) { deleteFavorite(favorite: favorite) } label: {
+                                            Label("Delete", systemImage: "trash")
+                                        }
                                     }
-                                }
-                                .onTapGesture {
-                                    takeSnapshot()
-                                    loadSnapshot(specific: favorite)
-                                }
-                                .listRowBackground(Color.clear)
-                                .listRowSeparator(.hidden)
-                                .listRowSpacing(0)
-                                .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 10, trailing: 0))
+                                    .onTapGesture {
+                                        takeSnapshot()
+                                        loadSnapshot(specific: favorite)
+                                    }
+                                Spacer()
+                                    .frame(minWidth: 0)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .listRowBackground(Color.clear)
+                            .listRowSeparator(.hidden)
+                            .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                            .padding(0)
                         }
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .scrollContentBackground(.hidden)
                     .layoutPriority(1)
-                    Spacer()
-                        .frame(minWidth: 0)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .listRowSpacing(10)
             }
         
         }
@@ -982,7 +985,7 @@ struct SwiftUIView: View {
     
     private func rightControls() -> some View {
         VStack (spacing: 0){
-            rightButton(icon: "SEND", highlight: heldButton == "SEND", top: true)
+            rightButton(icon: "send", highlight: heldButton == "SEND", top: true)
                 .gesture(
                     DragGesture(minimumDistance: 0, coordinateSpace: .named("screen"))
                         .onChanged { value in
@@ -998,7 +1001,7 @@ struct SwiftUIView: View {
                             }
                         }
                 )
-            rightButton(icon: "SAVE", highlight: heldButton == "SAVE")
+            rightButton(icon: "heart", highlight: heldButton == "SAVE")
                 .gesture(
                     DragGesture(minimumDistance: 0, coordinateSpace: .named("screen"))
                         .onChanged { value in
@@ -1020,7 +1023,7 @@ struct SwiftUIView: View {
                         message: Text("Your current drawing has been saved to your favorites, which are accessible by expanding the app to fullscreen.")
                     )
                 }
-            rightButton(icon: "CLEAR", highlight: heldButton == "CLEAR", bottom: true)
+            rightButton(icon: "clear", highlight: heldButton == "CLEAR", bottom: true)
                 .gesture(
                     DragGesture(minimumDistance: 0, coordinateSpace: .named("screen"))
                         .onChanged { value in
@@ -1042,43 +1045,18 @@ struct SwiftUIView: View {
     }
     
     private func rightButton(icon: String, highlight: Bool = false, top: Bool = false, bottom: Bool = false) -> some View {
-        let highlightColor = Color.white
-        let strokeColor = RIGHT_BUTTON_STROKE_COLOR
-        let fillColor = highlight ? colorTheme.leftBackground : LEFT_BUTTON_SHADOW_COLOR
-        
-        let pixels = Glyphs.iconPixels[icon] ?? Glyphs.iconPixels["BLANK"]!
-        let width = pixels[0].count
-        let height = pixels.count
-        
-        return ZStack {
-            Canvas(
-                opaque: false,
-                colorMode: .linear,
-                rendersAsynchronously: false
-            ) { context, size in
-                for y in 0..<height {
-                    for x in 0..<width {
-                        if pixels[y][x] != 0 {
-                            var color = Color.clear
-                            if pixels[y][x] == 1 {
-                                color = strokeColor
-                            } else if pixels[y][x] == 2 {
-                                color = highlightColor
-                            } else if pixels[y][x] == 3 {
-                                color = fillColor
-                            }
-                            context.fill(Path(CGRect(x: x, y: y, width: 1, height: 1)), with: .color(color))
-                        }
-                    }
-                }
-            }
-            .frame(width: CGFloat(width), height: CGFloat(height))
-            .scaleEffect(RIGHT_BUTTON_CANVAS_SCALE)
+        ZStack {
+            Image(icon)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .padding(RIGHT_ICON_PADDING)
         }
         .frame(width: RIGHT_BUTTON_WIDTH)
         .frame(maxHeight: .infinity)
-        .background(RIGHT_BUTTON_COLOR)
-        .roundedBorder(radius: CORNER_RADIUS * PIXEL_SIZE, borderLineWidth: PIXEL_SIZE, borderColor: DARK_BORDER_COLOR, insetColor: KEYBOARD_BACKGROUND_COLOR, topLeft: top, topRight: false, bottomLeft: bottom, bottomRight: false)
+        .background(highlight ? colorTheme.background : RIGHT_BUTTON_COLOR)
+        .roundedBorder(radius: CORNER_RADIUS * PIXEL_SIZE, borderLineWidth: PIXEL_SIZE, borderColor: DARK_BORDER_COLOR, insetColor: highlight ? colorTheme.background : KEYBOARD_BACKGROUND_COLOR, topLeft: top, topRight: false, bottomLeft: bottom, bottomRight: false)
+        .padding(.bottom, top ? -PIXEL_SIZE : 0)
+        .padding(.top, bottom ? -PIXEL_SIZE : 0)
     }
     
     private func send() {
