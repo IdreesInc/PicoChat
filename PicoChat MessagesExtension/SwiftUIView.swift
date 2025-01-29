@@ -137,8 +137,8 @@ extension ColorTheme: Equatable {
     }
 }
 
-struct Snapshot: Identifiable {
-    let id = UUID()
+struct Snapshot: Identifiable, Codable {
+    var id = UUID()
     var grid: [[Int]]
     var lastGlyphLocation: [Int]
 }
@@ -202,6 +202,7 @@ struct SwiftUIView: View {
     @State private var inputState = InputState.normal
     
     @State private var favorites = [Snapshot]()
+    @State private var favoritesAlertPresented = false
     
     let conversation: MSConversation
     let keyboards = [
@@ -253,6 +254,12 @@ struct SwiftUIView: View {
         print("Saving settings")
         let encodedName = name.joined(separator: "␟")
         let colorIndex = COLORS.firstIndex { $0 == colorTheme } ?? 0
+        let encodedFavorites = try? JSONEncoder().encode(favorites)
+        if let encodedFavorites = encodedFavorites {
+            UserDefaults.standard.set(encodedFavorites, forKey: "favorites")
+        } else {
+            print("Failed to encode favorites")
+        }
         UserDefaults.standard.set(encodedName, forKey: "name")
         UserDefaults.standard.set(colorIndex, forKey: "colorIndex")
     }
@@ -267,6 +274,14 @@ struct SwiftUIView: View {
         }
         if let colorIndex = UserDefaults.standard.object(forKey: "colorIndex") as? Int {
             colorTheme = COLORS[colorIndex % COLORS.count]
+        }
+        if let encodedFavorites = UserDefaults.standard.data(forKey: "favorites") {
+            if let decodedFavorites = try? JSONDecoder().decode([Snapshot].self, from: encodedFavorites) {
+                favorites = decodedFavorites
+                print("Loaded " + String(favorites.count) + " favorites")
+            } else {
+                print("Failed to decode favorites")
+            }
         }
     }
     
@@ -348,25 +363,37 @@ struct SwiftUIView: View {
             .layoutPriority(2)
             
             if presentationStyleWrapper.presentationStyle == .expanded {
-                List {
-                    // Favorites
-                    ForEach(favorites.reversed()) { favorite in
-                        board(BoardType.capture, grid: favorite.grid)
-                            .swipeActions(edge: .trailing) {
-                                Button(role: .destructive) { print ("Delete") } label: {
-                                    Label("Delete", systemImage: "trash")
+//                Text("Favorites")
+//                    .font(.title)
+                HStack(spacing: 0) {
+                    Spacer()
+                        .frame(minWidth: 0)
+                    List {
+                        // Favorites
+                        ForEach(favorites.reversed()) { favorite in
+                            board(BoardType.capture, grid: favorite.grid)
+                                .swipeActions(edge: .trailing) {
+                                    Button(role: .destructive) { deleteFavorite(favorite: favorite) } label: {
+                                        Label("Delete", systemImage: "trash")
+                                    }
                                 }
-                            }
-                            .listRowBackground(Color.clear)
-                            .listRowSeparator(.hidden)
-                            .listRowSpacing(0)
-                            .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 10, trailing: 0))
+                                .onTapGesture {
+                                    takeSnapshot()
+                                    loadSnapshot(specific: favorite)
+                                }
+                                .listRowBackground(Color.clear)
+                                .listRowSeparator(.hidden)
+                                .listRowSpacing(0)
+                                .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 10, trailing: 0))
+                        }
                     }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .scrollContentBackground(.hidden)
+                    .layoutPriority(1)
+                    Spacer()
+                        .frame(minWidth: 0)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(.clear)
-                .scrollContentBackground(.hidden)
-                .layoutPriority(1)
             }
         
         }
@@ -426,13 +453,15 @@ struct SwiftUIView: View {
                 }
             }
             
-            // Draw overlay
-            for pixel in overlayPixels {
-                let x = pixel[0]
-                let y = pixel[1]
-                let value = pixel[2]
-                if value != 0 {
-                    context.fill(Path(CGRect(x: x, y: y, width: 1, height: 1)), with: .color(PEN_COLORS[0]))
+            if type == BoardType.interactive {
+                // Draw overlay
+                for pixel in overlayPixels {
+                    let x = pixel[0]
+                    let y = pixel[1]
+                    let value = pixel[2]
+                    if value != 0 {
+                        context.fill(Path(CGRect(x: x, y: y, width: 1, height: 1)), with: .color(PEN_COLORS[0]))
+                    }
                 }
             }
         }
@@ -571,9 +600,15 @@ struct SwiftUIView: View {
                 .padding(.leading, HORIZONTAL_PADDING)
                 .padding(.trailing, HORIZONTAL_PADDING)
                 .scaleEffect(CGFloat(SCALE))
+        }
+        .applyIf(type == BoardType.interactive) { view in
+            view
                 .background(GeometryReader { proxy in
                     Color.clear
-                        .onAppear() {
+                        .onAppear {
+                            canvasFrame = proxy.frame(in: .named("screen"))
+                        }
+                        .onChange(of: proxy.size) { _ in
                             canvasFrame = proxy.frame(in: .named("screen"))
                         }
                 })
@@ -735,6 +770,7 @@ struct SwiftUIView: View {
                         dragPosition = value.location.applying(.init(translationX: -canvasFrame.minX, y: -canvasFrame.minY))
                         let potDragX = floor(dragPosition.x / canvasFrame.width * CGFloat(CANVAS_WIDTH) - 3)
                         let potDragY = floor(dragPosition.y / canvasFrame.height * CGFloat(CANVAS_HEIGHT) - 15)
+                        print(potDragX, potDragY)
                         if potDragX.isFinite && potDragY.isFinite && potDragX >= 0 && potDragX < CGFloat(CANVAS_WIDTH) && potDragY >= 0 && potDragY < CGFloat(CANVAS_HEIGHT) {
                             dragX = Int(potDragX)
                             dragY = Int(potDragY)
@@ -971,10 +1007,19 @@ struct SwiftUIView: View {
                         .onEnded { value in
                             heldButton = nil
                             if inputState == InputState.normal {
+                                if favorites.count == 0 {
+                                    favoritesAlertPresented = true
+                                }
                                 saveFavorite()
                             }
                         }
                 )
+                .alert(isPresented: $favoritesAlertPresented) {
+                    Alert(
+                        title: Text("Saved to Favorites"),
+                        message: Text("Your current drawing has been saved to your favorites, which are accessible by expanding the app to fullscreen.")
+                    )
+                }
             rightButton(icon: "CLEAR", highlight: heldButton == "CLEAR", bottom: true)
                 .gesture(
                     DragGesture(minimumDistance: 0, coordinateSpace: .named("screen"))
@@ -1126,6 +1171,18 @@ struct SwiftUIView: View {
         if snapshots.count > MAX_SNAPSHOTS {
             snapshots.removeFirst()
         }
+        storeSettings()
+    }
+    
+    func deleteFavorite(favorite: Snapshot) {
+        print("Deleting favorite...")
+
+        if let index = favorites.firstIndex(where: { $0.id == favorite.id }) {
+            favorites.remove(at: index)
+        } else {
+            print("Favorite not found")
+        }
+        storeSettings()
     }
 }
 
