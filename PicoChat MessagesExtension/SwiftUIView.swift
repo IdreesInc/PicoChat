@@ -289,90 +289,105 @@ struct SwiftUIView: View {
         }
     }
     
+    @State private var canvasTouchLocation: CGPoint?
+    @State private var showStylus = false
+    
     var body: some View {
         let modalPadding: CGFloat = 7
         
         // Whole view
-        let layout = landscapeMode ? AnyLayout(HStackLayout(spacing: 0)) : AnyLayout(VStackLayout(spacing: 0))
-        layout {
-            // Favorites in landscape
-            if landscapeMode {
-                favoritesView()
-            }
+        ZStack {
+            Image("stylus")
+                .resizable()
+                .frame(width: 350, height: 350)
+                .zIndex(2)
+                .position(x: (canvasTouchLocation?.x ?? 1000) + 350/2,
+                          y: (canvasTouchLocation?.y ?? 1000) + 350/2)
+                .opacity(0.7)
+                .animation(.easeInOut(duration: 0.5), value: showStylus)
+                    
             
-            // App
-            HStack(spacing: 0) {
+            let layout = landscapeMode ? AnyLayout(HStackLayout(spacing: 0)) : AnyLayout(VStackLayout(spacing: 0))
+            layout {
+                // Favorites in landscape
+                if landscapeMode {
+                    favoritesView()
+                }
                 
-                Spacer()
-                    .frame(minWidth: 0)
-                
-                // Left buttons
-                leftControls()
-                    .padding(.leading, 3)
-                    .padding(.trailing, 3)
-                
-                // Canvas and Keyboard Modal
-                VStack(spacing: 0) {
-                    // Canvas
-                    VStack {
-                        // Interactive canvas
-                        board(BoardType.interactive, grid: grid)
-                    }
-                    .padding(.top, modalPadding)
-                    .padding(.leading, modalPadding)
-                    .padding(.trailing, modalPadding)
+                // App
+                HStack(spacing: 0) {
                     
                     Spacer()
-                        .frame(height: modalPadding)
+                        .frame(minWidth: 0)
                     
-                    // Keyboard and controls
-                    let currentKb = keyboards[keyboard] ?? keyboards[Keyboard.lowercase]!
-                    HStack(spacing: 4) {
-                        // Keyboard
-                        Grid(horizontalSpacing: 1, verticalSpacing: 1) {
-                            ForEach(currentKb.indices, id: \.self) { rowIndex in
-                                GridRow {
-                                    ForEach(currentKb[rowIndex], id: \.self) { glyph in
-                                        key(glyph: glyph)
-                                    }
-                                }
-                                .frame(maxWidth: .infinity)
-                                .frame(maxHeight: .infinity)
-                            }
+                    // Left buttons
+                    leftControls()
+                        .padding(.leading, 3)
+                        .padding(.trailing, 3)
+                    
+                    // Canvas and Keyboard Modal
+                    VStack(spacing: 0) {
+                        // Canvas
+                        VStack {
+                            // Interactive canvas
+                            board(BoardType.interactive, grid: grid)
                         }
-                        .padding(.leading, PIXEL_SIZE)
-                        .padding(.trailing, PIXEL_SIZE)
-                        .padding(.top, PIXEL_SIZE)
-                        .padding(.bottom, PIXEL_SIZE)
-                        .frame(maxHeight: .infinity)
-                        .frame(maxWidth: .infinity)
-                        .frame(minWidth: KEYBOARD_OVERRIDE)
-                        .layoutPriority(12)
-                        .background(KEYBOARD_BACKGROUND_COLOR)
-                        .roundedBorder(radius: CORNER_RADIUS * PIXEL_SIZE, borderLineWidth: PIXEL_SIZE, borderColor: DARK_BORDER_COLOR, insetColor: KEYBOARD_BACKGROUND_COLOR)
+                        .padding(.top, modalPadding)
+                        .padding(.leading, modalPadding)
+                        .padding(.trailing, modalPadding)
                         
-                        // Right buttons
-                        rightControls()
+                        Spacer()
+                            .frame(height: modalPadding)
+                        
+                        // Keyboard and controls
+                        let currentKb = keyboards[keyboard] ?? keyboards[Keyboard.lowercase]!
+                        HStack(spacing: 4) {
+                            // Keyboard
+                            Grid(horizontalSpacing: 1, verticalSpacing: 1) {
+                                ForEach(currentKb.indices, id: \.self) { rowIndex in
+                                    GridRow {
+                                        ForEach(currentKb[rowIndex], id: \.self) { glyph in
+                                            key(glyph: glyph)
+                                        }
+                                    }
+                                    .frame(maxWidth: .infinity)
+                                    .frame(maxHeight: .infinity)
+                                }
+                            }
+                            .padding(.leading, PIXEL_SIZE)
+                            .padding(.trailing, PIXEL_SIZE)
+                            .padding(.top, PIXEL_SIZE)
+                            .padding(.bottom, PIXEL_SIZE)
+                            .frame(maxHeight: .infinity)
+                            .frame(maxWidth: .infinity)
+                            .frame(minWidth: KEYBOARD_OVERRIDE)
+                            .layoutPriority(12)
+                            .background(KEYBOARD_BACKGROUND_COLOR)
+                            .roundedBorder(radius: CORNER_RADIUS * PIXEL_SIZE, borderLineWidth: PIXEL_SIZE, borderColor: DARK_BORDER_COLOR, insetColor: KEYBOARD_BACKGROUND_COLOR)
+                            
+                            // Right buttons
+                            rightControls()
+                        }
+                        .padding(.bottom, modalPadding)
+                        .padding(.leading, modalPadding)
                     }
-                    .padding(.bottom, modalPadding)
-                    .padding(.leading, modalPadding)
+                    .background(MODAL_BACKGROUND_COLOR)
+                    .frame(minWidth: KEYBOARD_OVERRIDE == nil ? SCALED_CANVAS_WIDTH + 2 * modalPadding : nil)
+                    .frame(maxHeight: .infinity)
+                    .roundedBorder(radius: CORNER_RADIUS + modalPadding, borderLineWidth: PIXEL_SIZE, borderColor: DARK_BORDER_COLOR, topRight: false, bottomRight: false)
+                    .offset(x: PIXEL_SIZE * SCALE)
                 }
-                .background(MODAL_BACKGROUND_COLOR)
-                .frame(minWidth: KEYBOARD_OVERRIDE == nil ? SCALED_CANVAS_WIDTH + 2 * modalPadding : nil)
-                .frame(maxHeight: .infinity)
-                .roundedBorder(radius: CORNER_RADIUS + modalPadding, borderLineWidth: PIXEL_SIZE, borderColor: DARK_BORDER_COLOR, topRight: false, bottomRight: false)
-                .offset(x: PIXEL_SIZE * SCALE)
-            }
-            .frame(maxWidth: .infinity, maxHeight: MAX_HEIGHT)
-            .padding(.top, TOP_MARGIN)
-            .padding(.bottom, BOTTOM_MARGIN)
-            .layoutPriority(2)
-            .zIndex(2)
-            
-            // Favorites in portrait
-            if !landscapeMode && presentationStyleWrapper.presentationStyle == .expanded {
-                favoritesView()
-                    .padding(.top, modalPadding)
+                .frame(maxWidth: .infinity, maxHeight: MAX_HEIGHT)
+                .padding(.top, TOP_MARGIN)
+                .padding(.bottom, BOTTOM_MARGIN)
+                .layoutPriority(2)
+                .zIndex(2)
+                
+                // Favorites in portrait
+                if !landscapeMode && presentationStyleWrapper.presentationStyle == .expanded {
+                    favoritesView()
+                        .padding(.top, modalPadding)
+                }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -458,12 +473,6 @@ struct SwiftUIView: View {
                 }
             }
             
-            // Get coordinates relative to the canvas pixels
-            var overlayPixels: [[Int]] = []
-            if dragX != nil && dragY != nil && heldGlyph != nil {
-                overlayPixels = getTypedPixels(x: dragX!, y: dragY!, glyph: heldGlyph!)
-            }
-            
             // Draw each pixel
             for y in 0..<grid.count {
                 for x in 0..<grid[y].count {
@@ -474,6 +483,12 @@ struct SwiftUIView: View {
             }
             
             if type == BoardType.interactive {
+                // Get coordinates relative to the canvas pixels
+                var overlayPixels: [[Int]] = []
+                if dragX != nil && dragY != nil && heldGlyph != nil {
+                    overlayPixels = getTypedPixels(x: dragX!, y: dragY!, glyph: heldGlyph!)
+                }
+                
                 // Draw overlay
                 for pixel in overlayPixels {
                     let x = pixel[0]
@@ -612,6 +627,20 @@ struct SwiftUIView: View {
                     colorPicker()
                 }
             }
+            .simultaneousGesture(
+                DragGesture(minimumDistance: 0, coordinateSpace: .named("screen"))
+                    .onChanged { value in
+                        if inputState == InputState.settingName {
+                            return
+                        }
+                        canvasTouchLocation = value.location
+                        showStylus = true
+                    }
+                    .onEnded { _ in
+                        canvasTouchLocation = nil
+                        showStylus = false
+                    }
+            )
         }
         .applyIf(type != BoardType.export) { view in
             view
@@ -628,8 +657,8 @@ struct SwiftUIView: View {
                         .onAppear {
                             canvasFrame = proxy.frame(in: .named("screen"))
                         }
-                        .onChange(of: proxy.size) { _ in
-                            canvasFrame = proxy.frame(in: .named("screen"))
+                        .onChange(of: proxy.frame(in: .named("screen"))) { newFrame in
+                            canvasFrame = newFrame
                         }
                 })
         }
@@ -1158,6 +1187,16 @@ struct SwiftUIView: View {
     }
     
     func saveFavorite() {
+        if !grid.flatMap({ $0 }).contains(where: { $0 != 0 }) {
+            print("Empty grid, not saving favorite")
+            return
+        }
+        if let lastFavorite = favorites.last {
+            if grid == lastFavorite.grid {
+                print("Duplicate favorite, not saving")
+                return
+            }
+        }
         print("Saving favorite...")
         let gridClone = grid.map { $0.map { $0 } }
         let lastGlyphLocationClone = lastGlyphLocation.map { $0 }
