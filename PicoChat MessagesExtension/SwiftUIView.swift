@@ -16,11 +16,12 @@ struct Sizing {
     var topMargin: CGFloat
     var bottomMargin: CGFloat
     var rightIconPadding: CGFloat
+    var keyCanvasScale: CGFloat
 }
 
 let SIZINGS = [
-    "normal": Sizing(scale: 1.5 * UIScreen.main.bounds.width / 393, keyboardOverride: nil, topMargin: -2, bottomMargin: -10, rightIconPadding: 8),
-    "small": Sizing(scale: 1.15, keyboardOverride: 280, topMargin: -4, bottomMargin: 3, rightIconPadding: 5)
+    "normal": Sizing(scale: 1.5 * UIScreen.main.bounds.width / 393, keyboardOverride: nil, topMargin: -2, bottomMargin: -10, rightIconPadding: 8, keyCanvasScale: 1.4),
+    "small": Sizing(scale: 1.15, keyboardOverride: 280, topMargin: -4, bottomMargin: 3, rightIconPadding: 5, keyCanvasScale: 1.3)
 ]
 
 let sizing = UIScreen.main.bounds.height > 700 ? SIZINGS["normal"]! : SIZINGS["small"]!
@@ -30,7 +31,7 @@ let KEYBOARD_OVERRIDE: CGFloat? = sizing.keyboardOverride
 let TOP_MARGIN = sizing.topMargin
 let BOTTOM_MARGIN = sizing.bottomMargin
 let RIGHT_ICON_PADDING = sizing.rightIconPadding
-let KEY_CANVAS_SCALE = 1.3
+let KEY_CANVAS_SCALE = sizing.keyCanvasScale
 let RIGHT_BUTTON_CANVAS_SCALE = 1.6
 let CANVAS_WIDTH = 234
 let NOTEBOOK_LINE_SPACING = 18
@@ -446,7 +447,6 @@ struct SwiftUIView: View {
             rendersAsynchronously: false
         ) { context, size in
             context.fill(Path(CGRect(origin: .zero, size: size)), with: .color(BACKGROUND_COLOR))
-            print("\(UIScreen.main.bounds.width) \(UIScreen.main.bounds.height)")
             
             // Draw notebook lines
             if (type == BoardType.interactive) {
@@ -790,7 +790,6 @@ struct SwiftUIView: View {
                         dragPosition = value.location.applying(.init(translationX: -canvasFrame.minX, y: -canvasFrame.minY))
                         let potDragX = floor(dragPosition.x / canvasFrame.width * CGFloat(CANVAS_WIDTH) - 3)
                         let potDragY = floor(dragPosition.y / canvasFrame.height * CGFloat(CANVAS_HEIGHT) - 15)
-                        print(potDragX, potDragY)
                         if potDragX.isFinite && potDragY.isFinite && potDragX >= 0 && potDragX < CGFloat(CANVAS_WIDTH) && potDragY >= 0 && potDragY < CGFloat(CANVAS_HEIGHT) {
                             dragX = Int(potDragX)
                             dragY = Int(potDragY)
@@ -1072,8 +1071,8 @@ struct SwiftUIView: View {
         .frame(maxHeight: .infinity)
         .background(highlight ? colorTheme.background : RIGHT_BUTTON_COLOR)
         .roundedBorder(radius: CORNER_RADIUS * PIXEL_SIZE, borderLineWidth: PIXEL_SIZE, borderColor: DARK_BORDER_COLOR, insetColor: highlight ? colorTheme.background : KEYBOARD_BACKGROUND_COLOR, topLeft: top, topRight: false, bottomLeft: bottom, bottomRight: false)
-        .padding(.bottom, top ? -PIXEL_SIZE : 0)
-        .padding(.top, bottom ? -PIXEL_SIZE : 0)
+        .padding(.bottom, top ? CGFloat(-PIXEL_SIZE) : 0)
+        .padding(.top, bottom ? CGFloat(-PIXEL_SIZE) : 0)
     }
     
     private func send() {
