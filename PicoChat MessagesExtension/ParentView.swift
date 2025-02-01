@@ -26,7 +26,7 @@ struct ParentView: View {
                 .simultaneousGesture(
                     DragGesture(minimumDistance: 0, coordinateSpace: .named("screen"))
                         .onChanged { value in
-                            if Date().timeIntervalSince(timeOfLastUpdate) < 1.0 / 60.0 {
+                            if !touching || Date().timeIntervalSince(timeOfLastUpdate) < 1.0 / 60.0 {
                                 return
                             }
                             timeOfLastUpdate = Date()
