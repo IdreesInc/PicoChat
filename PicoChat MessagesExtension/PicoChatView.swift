@@ -20,8 +20,8 @@ struct Sizing {
 }
 
 let SIZINGS = [
-    "normal": Sizing(scale: 1.5 * UIScreen.main.bounds.width / 393, keyboardOverride: nil, topMargin: -2, bottomMargin: -10, rightIconPadding: 8, keyCanvasScale: 1.4),
-    "small": Sizing(scale: 1.15, keyboardOverride: 280, topMargin: -4, bottomMargin: 3, rightIconPadding: 5, keyCanvasScale: 1.3)
+    "normal": Sizing(scale: 1.5 * UIScreen.main.bounds.width / 393, keyboardOverride: nil, topMargin: 15, bottomMargin: 20, rightIconPadding: 8, keyCanvasScale: 1.4),
+    "small": Sizing(scale: 1.15, keyboardOverride: 280, topMargin: 15, bottomMargin: 3, rightIconPadding: 5, keyCanvasScale: 1.3)
 ]
 
 let sizing = UIScreen.main.bounds.height > 700 ? SIZINGS["normal"]! : SIZINGS["small"]!
@@ -176,8 +176,9 @@ enum BoardType {
     case capture
 }
 
-struct SwiftUIView: View {
+struct PicoChatView: View {
     @ObservedObject var presentationStyleWrapper: PresentationStyleWrapper
+    @ObservedObject var conversationWrapper: ConversationWrapper
     
     @State private var grid: [[Int]] = Array(repeating: Array(repeating: 0, count: CANVAS_WIDTH), count: CANVAS_HEIGHT)
     @State private var lastTouchLocation: CGPoint? = nil
@@ -208,7 +209,6 @@ struct SwiftUIView: View {
     @State private var favoritesAlertPresented = false
     @State private var landscapeMode = UIScreen.main.bounds.width > UIScreen.main.bounds.height
     
-    let conversation: MSConversation
     let keyboards = [
         Keyboard.lowercase: [
             ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "-", "="],
@@ -289,24 +289,33 @@ struct SwiftUIView: View {
         }
     }
     
-    @State private var canvasTouchLocation: CGPoint?
+//    @State private var canvasTouchLocation: CGPoint?
     @State private var showStylus = false
+    
+//    struct StylusView: View {
+//        var canvasTouchLocation: CGPoint?
+//        var showStylus: Bool
+//        
+//        var body: some View {
+//            let _ = Self._printChanges()
+//            Image("stylus")
+//                .resizable()
+//                .frame(width: 350, height: 350)
+//                .zIndex(2)
+//                .position(x: (canvasTouchLocation?.x ?? 1000) + 350/2,
+//                          y: (canvasTouchLocation?.y ?? 1000) + 350/2)
+//                .opacity(0.7)
+//                .animation(.easeInOut(duration: 0.5), value: showStylus)
+//        }
+//    }
     
     var body: some View {
         let modalPadding: CGFloat = 7
         
         // Whole view
         ZStack {
-            Image("stylus")
-                .resizable()
-                .frame(width: 350, height: 350)
-                .zIndex(2)
-                .position(x: (canvasTouchLocation?.x ?? 1000) + 350/2,
-                          y: (canvasTouchLocation?.y ?? 1000) + 350/2)
-                .opacity(0.7)
-                .animation(.easeInOut(duration: 0.5), value: showStylus)
-                    
-            
+            let _ = Self._printChanges()
+
             let layout = landscapeMode ? AnyLayout(HStackLayout(spacing: 0)) : AnyLayout(VStackLayout(spacing: 0))
             layout {
                 // Favorites in landscape
@@ -316,7 +325,6 @@ struct SwiftUIView: View {
                 
                 // App
                 HStack(spacing: 0) {
-                    
                     Spacer()
                         .frame(minWidth: 0)
                     
@@ -330,7 +338,7 @@ struct SwiftUIView: View {
                         // Canvas
                         VStack {
                             // Interactive canvas
-                            board(BoardType.interactive, grid: grid)
+                            board(BoardType.interactive, grid: $grid)
                         }
                         .padding(.top, modalPadding)
                         .padding(.leading, modalPadding)
@@ -342,29 +350,26 @@ struct SwiftUIView: View {
                         // Keyboard and controls
                         let currentKb = keyboards[keyboard] ?? keyboards[Keyboard.lowercase]!
                         HStack(spacing: 4) {
+                            let _ = Self._printChanges()
                             // Keyboard
-                            Grid(horizontalSpacing: 1, verticalSpacing: 1) {
-                                ForEach(currentKb.indices, id: \.self) { rowIndex in
-                                    GridRow {
-                                        ForEach(currentKb[rowIndex], id: \.self) { glyph in
-                                            key(glyph: glyph)
-                                        }
-                                    }
-                                    .frame(maxWidth: .infinity)
-                                    .frame(maxHeight: .infinity)
-                                }
-                            }
-                            .padding(.leading, PIXEL_SIZE)
-                            .padding(.trailing, PIXEL_SIZE)
-                            .padding(.top, PIXEL_SIZE)
-                            .padding(.bottom, PIXEL_SIZE)
-                            .frame(maxHeight: .infinity)
-                            .frame(maxWidth: .infinity)
-                            .frame(minWidth: KEYBOARD_OVERRIDE)
-                            .layoutPriority(12)
-                            .background(KEYBOARD_BACKGROUND_COLOR)
-                            .roundedBorder(radius: CORNER_RADIUS * PIXEL_SIZE, borderLineWidth: PIXEL_SIZE, borderColor: DARK_BORDER_COLOR, insetColor: KEYBOARD_BACKGROUND_COLOR)
-                            
+                            KeyboardView(
+                                currentKb: currentKb,
+                                heldGlyph: $heldGlyph,
+                                capsLock: $capsLock,
+                                keyboard: $keyboard,
+                                inputState: $inputState,
+                                dragPosition: $dragPosition,
+                                dragX: $dragX,
+                                dragY: $dragY,
+                                canvasFrame: $canvasFrame,
+                                colorTheme: $colorTheme,
+                                loadSnapshot: loadSnapshot,
+                                newLine: newLine,
+                                type: type,
+                                addGlyphToName: addGlyphToName,
+                                removeGlyphFromName: removeGlyphFromName,
+                                confirmNameChange: confirmNameChange
+                            ).equatable()
                             // Right buttons
                             rightControls()
                         }
@@ -397,485 +402,10 @@ struct SwiftUIView: View {
             loadSettings()
         }
         .onGeometryChange(for: CGRect.self) { proxy in
-           proxy.frame(in: .global)
-       } action: { newValue in
-           landscapeMode = UIScreen.main.bounds.width > UIScreen.main.bounds.height
-       }
-    }
-    
-    func favoritesView() -> some View {
-        List {
-            // Favorites
-            ForEach(favorites.reversed()) { favorite in
-                HStack(spacing: 0) {
-                    Spacer()
-                        .frame(minWidth: 0)
-                    board(BoardType.capture, grid: favorite.grid)
-                        .swipeActions(edge: .trailing) {
-                            Button(role: .destructive) { deleteFavorite(favorite: favorite) } label: {
-                                Label("Delete", systemImage: "trash")
-                            }
-                        }
-                        .onTapGesture {
-                            takeSnapshot()
-                            loadSnapshot(specific: favorite)
-                        }
-                        .applyIf(landscapeMode) { view in
-                            view.scaleEffect(0.9)
-                        }
-                    Spacer()
-                        .frame(minWidth: 0)
-                }
-                .frame(maxWidth: .infinity)
-                .listRowBackground(Color.clear)
-                .listRowSeparator(.hidden)
-                .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                .padding(0)
-            }
+            proxy.frame(in: .global)
+        } action: { newValue in
+            landscapeMode = UIScreen.main.bounds.width > UIScreen.main.bounds.height
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .frame(minWidth: 100)
-        .scrollContentBackground(.hidden)
-        .listRowSpacing(10)
-        .layoutPriority(2)
-    }
-    
-    func getAndIncrementInk() -> Int {
-        if rainbowPen {
-            penLength += 1
-            if penLength >= 3 {
-                penLength = 0
-                penColorIndex += 1
-                if penColorIndex >= PEN_COLORS.count {
-                    penColorIndex = 1
-                }
-            }
-            return penType == PenType.eraser ? 0 : (penColorIndex + 1)
-        }
-        return penType == PenType.eraser ? 0 : 1
-    }
-    
-    private func board(_ type: BoardType, grid: [[Int]]) -> some View {
-        Canvas(
-            opaque: true,
-            colorMode: .linear,
-            rendersAsynchronously: false
-        ) { context, size in
-            context.fill(Path(CGRect(origin: .zero, size: size)), with: .color(BACKGROUND_COLOR))
-            
-            // Draw notebook lines
-            if (type == BoardType.interactive) {
-                for y in stride(from: 0, to: CANVAS_HEIGHT, by: NOTEBOOK_LINE_SPACING) {
-                    context.stroke(Path { path in
-                        path.move(to: CGPoint(x: 0, y: y))
-                        path.addLine(to: CGPoint(x: CANVAS_WIDTH, y: y))
-                    }, with: .color(colorTheme.background), lineWidth: 1)
-                }
-            }
-            
-            // Draw each pixel
-            for y in 0..<grid.count {
-                for x in 0..<grid[y].count {
-                    if grid[y][x] > 0 {
-                        context.fill(Path(CGRect(x: x, y: y, width: 1, height: 1)), with: .color(PEN_COLORS[grid[y][x] - 1]))
-                    }
-                }
-            }
-            
-            if type == BoardType.interactive {
-                // Get coordinates relative to the canvas pixels
-                var overlayPixels: [[Int]] = []
-                if dragX != nil && dragY != nil && heldGlyph != nil {
-                    overlayPixels = getTypedPixels(x: dragX!, y: dragY!, glyph: heldGlyph!)
-                }
-                
-                // Draw overlay
-                for pixel in overlayPixels {
-                    let x = pixel[0]
-                    let y = pixel[1]
-                    let value = pixel[2]
-                    if value != 0 {
-                        context.fill(Path(CGRect(x: x, y: y, width: 1, height: 1)), with: .color(PEN_COLORS[0]))
-                    }
-                }
-            }
-        }
-        .frame(width: CGFloat(CANVAS_WIDTH), height: CGFloat(CANVAS_HEIGHT))
-        .roundedBorder(radius: CORNER_RADIUS, borderLineWidth: 1, borderColor: .white, insetColor: colorTheme.border, nameColor: colorTheme.background)
-        .overlay(alignment: .topLeading, content: {
-            ZStack {
-                Canvas(opaque: false,
-                       colorMode: .linear,
-                       rendersAsynchronously: false
-                ) { context, size in
-                    let nameWidths = name.map { Glyphs.glyphPixels[$0]![0].count }
-                    var x = 6
-                    for i in 0..<name.count {
-                        let pixels = getTypedPixels(x: x, y: NOTEBOOK_LINE_SPACING - 3, glyph: name[i])
-                        let width = nameWidths[i]
-                        for pixel in pixels {
-                            let pixelX = pixel[0]
-                            let pixelY = pixel[1]
-                            let value = pixel[2]
-                            if value != 0 {
-                                context.fill(Path(CGRect(x: pixelX, y: pixelY, width: 1, height: 1)), with: .color(colorTheme.border))
-                            }
-                        }
-                        x += width + 1
-                    }
-                    
-                }.frame(width: max(CGFloat(MIN_NAME_WIDTH), calculateNameWidth() + 12), height: CGFloat(NOTEBOOK_LINE_SPACING) + 1.5)
-                    .background(alignment: .topLeading) {
-                        // iOS 16 doesn't allow for fill and stroke at the same time, so have to make two shapes
-                        // Fill
-                        UnevenRoundedRectangle(cornerRadii: .init(
-                            topLeading: CORNER_RADIUS,
-                            bottomTrailing: CORNER_RADIUS), style: .continuous)
-                        .inset(by: 1)
-                        .foregroundStyle(colorTheme.background)
-                        // Stroke
-                        UnevenRoundedRectangle(cornerRadii: .init(
-                            topLeading: CORNER_RADIUS,
-                            bottomTrailing: CORNER_RADIUS), style: .continuous)
-                        .inset(by: 1)
-                        .strokeBorder(colorTheme.border, lineWidth: 1, antialiased: true)
-                    }
-                    .applyIf(type == BoardType.interactive) { view in
-                        view
-                            .onTapGesture {
-                                if inputState == InputState.normal {
-                                    beginNameChange()
-                                }
-                            }
-                    }
-            }
-        })
-        .applyIf(type == BoardType.interactive) { view in
-            view.gesture(
-                DragGesture(minimumDistance: 0, coordinateSpace: .local)
-                    .onChanged { value in
-                        if inputState == InputState.settingName {
-                            return
-                        }
-                        if !drawing {
-                            takeSnapshot()
-                            drawing = true
-                        }
-                        var ink = getAndIncrementInk()
-                        if value.location.x >= 0 && value.location.x < CGFloat(CANVAS_WIDTH) && value.location.y >= 0 && value.location.y < CGFloat(CANVAS_HEIGHT) {
-                            draw(x: Int(value.location.x), y: Int(value.location.y), value: ink)
-                            if penSize == PenSize.big {
-                                draw(x: Int(value.location.x) - 1, y: Int(value.location.y), value: ink)
-                                draw(x: Int(value.location.x) - 1, y: Int(value.location.y) - 1, value: ink)
-                                draw(x: Int(value.location.x), y: Int(value.location.y) - 1, value: ink)
-                            }
-                        }
-                        if let lastTouch = lastTouchLocation {
-                            // Bresenham's Line Algorithm
-                            let from = lastTouch
-                            let to = value.location
-                            
-                            let x0 = Int(from.x)
-                            let y0 = Int(from.y)
-                            let x1 = Int(to.x)
-                            let y1 = Int(to.y)
-                            
-                            let dx = abs(x1 - x0)
-                            let dy = abs(y1 - y0)
-                            
-                            let sx = x0 < x1 ? 1 : -1
-                            let sy = y0 < y1 ? 1 : -1
-                            
-                            var err = dx - dy
-                            var x = x0
-                            var y = y0
-                            
-                            while true {
-                                ink = getAndIncrementInk()
-                                
-                                draw(x: x, y: y, value: ink)
-                                if penSize == PenSize.big {
-                                    draw(x: x - 1, y: y, value: ink)
-                                    draw(x: x - 1, y: y - 1, value: ink)
-                                    draw(x: x, y: y - 1, value: ink)
-                                }
-                                if x == x1 && y == y1 {
-                                    break
-                                }
-                                let e2 = 2 * err
-                                if e2 > -dy {
-                                    err -= dy
-                                    x += sx
-                                }
-                                if e2 < dx {
-                                    err += dx
-                                    y += sy
-                                }
-                            }
-                        }
-                        
-                        lastTouchLocation = value.location
-                    }
-                    .onEnded { _ in
-                        lastTouchLocation = nil
-                        drawing = false
-                    }
-            )
-            .allowsHitTesting(inputState != InputState.settingName)
-            .overlay(alignment: .bottom) {
-                if inputState == InputState.settingName {
-                    colorPicker()
-                }
-            }
-            .simultaneousGesture(
-                DragGesture(minimumDistance: 0, coordinateSpace: .named("screen"))
-                    .onChanged { value in
-                        if inputState == InputState.settingName {
-                            return
-                        }
-                        canvasTouchLocation = value.location
-                        showStylus = true
-                    }
-                    .onEnded { _ in
-                        canvasTouchLocation = nil
-                        showStylus = false
-                    }
-            )
-        }
-        .applyIf(type != BoardType.export) { view in
-            view
-                .padding(.top, VERTICAL_PADDING)
-                .padding(.bottom, VERTICAL_PADDING)
-                .padding(.leading, HORIZONTAL_PADDING)
-                .padding(.trailing, HORIZONTAL_PADDING)
-                .scaleEffect(CGFloat(SCALE))
-        }
-        .applyIf(type == BoardType.interactive) { view in
-            view
-                .background(GeometryReader { proxy in
-                    Color.clear
-                        .onAppear {
-                            canvasFrame = proxy.frame(in: .named("screen"))
-                        }
-                        .onChange(of: proxy.frame(in: .named("screen"))) { newFrame in
-                            canvasFrame = newFrame
-                        }
-                })
-        }
-        .applyIf(type == BoardType.export) { view in
-            view
-                .padding(.top, 25)
-                .padding(.bottom, 25)
-                .padding(.leading, 7)
-                .padding(.trailing, 7)
-        }
-    }
-    
-    func colorPicker() -> some View {
-        let SQUARE_SIZE = 10.0
-        return HStack(spacing: 4) {
-            ForEach(0..<COLORS.count, id: \.self) { i in
-                ZStack {
-                }
-                .frame(width: SQUARE_SIZE, height: SQUARE_SIZE)
-                .background(COLORS[i].leftBackground)
-                .onTapGesture {
-                    colorTheme = COLORS[i]
-                }
-            }
-        }
-        .offset(y: CGFloat(-5 - NOTEBOOK_LINE_SPACING))
-    }
-    
-    func beginNameChange() {
-        inputState = InputState.settingName
-        oldName = name.map { $0 }
-        oldColor = colorTheme
-        if name == DEFAULT_NAME {
-            name = []
-        }
-        takeSnapshot()
-        clear()
-        // Type your name and select a color
-        let letters = ["T", "y", "p", "e", " ", "y", "o", "u", "r", " ", "n", "a", "m", "e", " ", "a", "n", "d", " ", "s", "e", "l", "e", "c", "t", " ", "a", " ", "c", "o", "l", "o", "r"]
-        newLine()
-        for letter in letters {
-            type(glyph: letter, snapshot: false)
-        }
-        newLine()
-        // Press ENTER to confirm or CLEAR to cancel
-        let enter = ["P", "r", "e", "s", "s", " ", "E", "N", "T", "E", "R", " ", "t", "o", " ", "c", "o", "n", "f", "i", "r", "m", " ", "o", "r", " ", "C", "L", "E", "A", "R", " ", "t", "o", " ", "c", "a", "n", "c", "e", "l",]
-        for letter in enter {
-            type(glyph: letter, snapshot: false)
-        }
-    }
-    
-    func addGlyphToName(glyph: String) {
-        if name.count < MAX_NAME_LENGTH {
-            name.append(glyph)
-        }
-    }
-    
-    func removeGlyphFromName() {
-        if name.count > 0 {
-            name.removeLast()
-        }
-    }
-    
-    func confirmNameChange() {
-        if name.count == 0 {
-            cancelNameChange()
-        }
-        inputState = InputState.normal
-        oldName = nil
-        oldColor = nil
-        loadSnapshot()
-        storeSettings()
-    }
-    
-    func cancelNameChange() {
-        inputState = InputState.normal
-        name = oldName.map { $0 } ?? []
-        colorTheme = oldColor ?? colorTheme
-        oldName = nil
-        oldColor = nil
-        loadSnapshot()
-    }
-    
-    func calculateNameWidth() -> CGFloat {
-        let nameWidths = name.map{ Glyphs.glyphPixels[$0]![0].count }
-        var width = 0
-        for i in 0..<name.count {
-            width += nameWidths[i] + 1
-        }
-        return CGFloat(width) - 1
-    }
-    
-    private func key(glyph: String) -> some View {
-        let isControl = Glyphs.controls[glyph] != nil
-        var keyBgColor = isControl ? CONTROL_BUTTON_COLOR : KEYBOARD_BUTTON_COLOR
-        var keyTextColor = isControl ? CONTROL_TEXT_COLOR : .black
-        var canvasScale = KEY_CANVAS_SCALE
-        
-        let pixels = Glyphs.glyphPixels[glyph] ?? Glyphs.glyphPixels["?"]!
-        let adjustments = Glyphs.adjustments[glyph] ?? [0, 0]
-        let width = pixels[0].count
-        let height = pixels.count
-        let MAX_HEIGHT = 12
-        let BOTTOM_SPACE = 1
-        let yMod = MAX_HEIGHT - BOTTOM_SPACE - height + adjustments[1]
-        
-        if glyph == "HALF_SPACER" {
-            keyBgColor = .clear
-            keyTextColor = .clear
-        } else if glyph == "SPACER" {
-            keyBgColor = .clear
-            keyTextColor = .clear
-        } else if glyph == "CAPS" {
-            keyBgColor = capsLock ? colorTheme.controlPressedBackground : keyBgColor
-            keyTextColor = capsLock ? colorTheme.keyPressedText : keyTextColor
-        } else if glyph == "SMALL_SPACE" {
-            canvasScale = KEY_CANVAS_SCALE - 0.2
-        }
-        
-        if glyph == heldGlyph {
-            if isControl {
-                keyBgColor = colorTheme.controlPressedBackground
-            } else {
-                keyBgColor = colorTheme.keyPressedBackground
-            }
-            keyTextColor = colorTheme.keyPressedText
-        }
-        
-        return VStack(spacing: 0) {
-            Canvas(
-                opaque: false,
-                colorMode: .linear,
-                rendersAsynchronously: false
-            ) { context, size in
-                // Fill the canvas with a white background
-                context.fill(Path(CGRect(origin: .zero, size: size)), with: .color(keyBgColor))
-                for y in 0..<height {
-                    for x in 0..<width {
-                        if pixels[y][x] == 1 {
-                            context.fill(Path(CGRect(x: x, y: y + yMod, width: 1, height: 1)), with: .color(keyTextColor))
-                        }
-                    }
-                }
-            }
-            .frame(width: CGFloat(width), height: CGFloat(MAX_HEIGHT))
-            .scaleEffect(canvasScale)
-        }
-        .frame(maxWidth: .infinity)
-        .frame(maxHeight: .infinity)
-        .background(keyBgColor)
-        .gridCellColumns(Glyphs.controls[glyph] ?? 2)
-        .gesture(
-            DragGesture(minimumDistance: 0, coordinateSpace: .named("screen"))
-                .onChanged { value in
-                    heldGlyph = glyph
-                    
-                    if inputState == InputState.normal && !isControl && (abs(value.translation.width) > 5 || abs(value.translation.height) > 5) {
-                        dragPosition = value.location.applying(.init(translationX: -canvasFrame.minX, y: -canvasFrame.minY))
-                        let potDragX = floor(dragPosition.x / canvasFrame.width * CGFloat(CANVAS_WIDTH) - 3)
-                        let potDragY = floor(dragPosition.y / canvasFrame.height * CGFloat(CANVAS_HEIGHT) - 15)
-                        if potDragX.isFinite && potDragY.isFinite && potDragX >= 0 && potDragX < CGFloat(CANVAS_WIDTH) && potDragY >= 0 && potDragY < CGFloat(CANVAS_HEIGHT) {
-                            dragX = Int(potDragX)
-                            dragY = Int(potDragY)
-                        } else {
-                            dragX = nil
-                            dragY = nil
-                        }
-                    }
-                }
-                .onEnded { value in
-                    heldGlyph = nil
-                    
-                    var typedGlyph = glyph
-                    
-                    switch glyph {
-                    case "SHIFT":
-                        keyboard = keyboard == Keyboard.uppercase ? Keyboard.lowercase : Keyboard.uppercase
-                        capsLock = false
-                    case "CAPS":
-                        capsLock = !capsLock
-                        if capsLock {
-                            keyboard = Keyboard.uppercase
-                        } else {
-                            keyboard = Keyboard.lowercase
-                        }
-                    case "ENTER", "SMALL_ENTER":
-                        if inputState == InputState.normal {
-                            newLine()
-                        } else if inputState == InputState.settingName {
-                            confirmNameChange()
-                        }
-                    case "BACKSPACE", "SMALL_BACKSPACE":
-                        if inputState == InputState.normal {
-                            loadSnapshot()
-                        } else if inputState == InputState.settingName {
-                            removeGlyphFromName()
-                        }
-                    case "SPACE", "SMALL_SPACE":
-                        typedGlyph = " "
-                        fallthrough
-                    default:
-                        if !capsLock && keyboard == Keyboard.uppercase {
-                            keyboard = Keyboard.lowercase
-                        }
-                        if inputState == InputState.normal {
-                            type(glyph: typedGlyph, overrideX: dragX, overrideY: dragY)
-                        } else if inputState == InputState.settingName {
-                            addGlyphToName(glyph: typedGlyph)
-                        }
-                    }
-                    
-                    dragPosition = .zero
-                    dragX = nil
-                    dragY = nil
-                    heldGlyph = nil
-                }
-        )
     }
     
     func newLine() {
@@ -883,7 +413,7 @@ struct SwiftUIView: View {
         lastGlyphLocation[1] += NOTEBOOK_LINE_SPACING
     }
     
-    func type(glyph: String, overrideX: Int? = nil, overrideY: Int? = nil, snapshot: Bool = true) {
+    func type(glyph: String, overrideX: Int? = nil, overrideY: Int? = nil, snapshot: Bool? = true) {
         let text = glyph
         let textWidth = (Glyphs.glyphPixels[glyph] ?? Glyphs.glyphPixels["?"]!)[0].count
         var nextX = lastGlyphLocation[0] + 1
@@ -896,7 +426,7 @@ struct SwiftUIView: View {
             nextX = HORIZONTAL_MARGIN
             nextY += NOTEBOOK_LINE_SPACING
         }
-        drawGlyph(x: nextX, y: nextY, glyph: text, snapshot: snapshot)
+        drawGlyph(x: nextX, y: nextY, glyph: text, snapshot: snapshot ?? true)
         lastGlyphLocation[0] = nextX + textWidth
         lastGlyphLocation[1] = nextY
         if keyboard == Keyboard.uppercase && !capsLock {
@@ -975,8 +505,129 @@ struct SwiftUIView: View {
         }
         .frame(maxHeight: .infinity)
         .padding(.top, PIXEL_SIZE)
-        .padding(.bottom, 15)
+        .padding(.bottom, 20)
         .layoutPriority(1)
+    }
+    
+    func favoritesView() -> some View {
+        List {
+            // Favorites
+            ForEach(favorites.reversed()) { favorite in
+                HStack(spacing: 0) {
+                    Spacer()
+                        .frame(minWidth: 0)
+                    board(BoardType.capture, grid: Binding.constant(favorite.grid))
+                    .swipeActions(edge: .trailing) {
+                        Button(role: .destructive) { deleteFavorite(favorite: favorite) } label: {
+                            Label("Delete", systemImage: "trash")
+                        }
+                    }
+                    .onTapGesture {
+                        takeSnapshot()
+                        loadSnapshot(specific: favorite)
+                    }
+                    .applyIf(landscapeMode) { view in
+                        view.scaleEffect(0.9)
+                    }
+                    Spacer()
+                        .frame(minWidth: 0)
+                }
+                .frame(maxWidth: .infinity)
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+                .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                .padding(0)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .frame(minWidth: 100)
+        .scrollContentBackground(.hidden)
+        .listRowSpacing(10)
+        .layoutPriority(2)
+    }
+    
+    private func board(_ boardType: BoardType, grid: Binding<[[Int]]>) -> BoardView {
+        return BoardView(
+            type: boardType,
+            grid: grid,
+            heldGlyph: $heldGlyph,
+            dragX: $dragX,
+            dragY: $dragY,
+            canvasFrame: $canvasFrame,
+            colorTheme: $colorTheme,
+            inputState: $inputState,
+            drawing: $drawing,
+            lastTouchLocation: $lastTouchLocation,
+            name: $name,
+            penType: $penType,
+            penSize: $penSize,
+            penColorIndex: $penColorIndex,
+            penLength: $penLength,
+            rainbowPen: $rainbowPen,
+            takeSnapshot: takeSnapshot,
+            beginNameChange: beginNameChange
+        )
+    }
+    
+    func draw(x: Int, y: Int, value: Int) {
+        if (x >= 0 && x < CANVAS_WIDTH && y >= 0 && y < CANVAS_HEIGHT) {
+            grid[y][x] = value;
+        }
+    }
+    
+    func beginNameChange() {
+        inputState = InputState.settingName
+        oldName = name.map { $0 }
+        oldColor = colorTheme
+        if name == DEFAULT_NAME {
+            name = []
+        }
+        takeSnapshot()
+        clear()
+        // Type your name and select a color
+        let letters = ["T", "y", "p", "e", " ", "y", "o", "u", "r", " ", "n", "a", "m", "e", " ", "a", "n", "d", " ", "s", "e", "l", "e", "c", "t", " ", "a", " ", "c", "o", "l", "o", "r"]
+        newLine()
+        for letter in letters {
+            type(glyph: letter, snapshot: false)
+        }
+        newLine()
+        // Press ENTER to confirm or CLEAR to cancel
+        let enter = ["P", "r", "e", "s", "s", " ", "E", "N", "T", "E", "R", " ", "t", "o", " ", "c", "o", "n", "f", "i", "r", "m", " ", "o", "r", " ", "C", "L", "E", "A", "R", " ", "t", "o", " ", "c", "a", "n", "c", "e", "l",]
+        for letter in enter {
+            type(glyph: letter, snapshot: false)
+        }
+    }
+    
+    func addGlyphToName(glyph: String) {
+        if name.count < MAX_NAME_LENGTH {
+            name.append(glyph)
+        }
+    }
+    
+    func removeGlyphFromName() {
+        if name.count > 0 {
+            name.removeLast()
+        }
+    }
+    
+    func confirmNameChange() {
+        if name.count == 0 {
+            cancelNameChange()
+        }
+        inputState = InputState.normal
+        oldName = nil
+        oldColor = nil
+        loadSnapshot()
+        storeSettings()
+    }
+    
+    func cancelNameChange() {
+        inputState = InputState.normal
+        name = oldName.map { $0 } ?? []
+        colorTheme = oldColor ?? colorTheme
+        oldName = nil
+        oldColor = nil
+        loadSnapshot()
     }
     
     private func leftButton(icon: String, highlight: Bool = false, top: Bool = false, bottom: Bool = false, colorOverride: ColorTheme? = nil) -> some View {
@@ -1000,7 +651,7 @@ struct SwiftUIView: View {
             Canvas(
                 opaque: false,
                 colorMode: .linear,
-                rendersAsynchronously: false
+                rendersAsynchronously: true
             ) { context, size in
                 for y in 0..<height {
                     for x in 0..<width {
@@ -1106,14 +757,14 @@ struct SwiftUIView: View {
     
     private func send() {
         takeSnapshot()
-        let renderer = ImageRenderer(content: board(BoardType.export, grid: grid))
+        let renderer = ImageRenderer(content: board(BoardType.export, grid: $grid))
         renderer.scale = 5
         if let image = renderer.uiImage {
             let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString).appendingPathExtension("png")
             if let data = image.pngData() {
                 try? data.write(to: url)
             }
-            conversation.insertAttachment(url, withAlternateFilename: "Image.png") { error in
+            conversationWrapper.conversation.insertAttachment(url, withAlternateFilename: "Image.png") { error in
                 if let error = error {
                     print("Failed to insert image: \(error.localizedDescription)")
                 }
@@ -1121,26 +772,21 @@ struct SwiftUIView: View {
         }
     }
     
-    private func sendAsSticker() {
-        let renderer = ImageRenderer(content: board(BoardType.export, grid: grid))
-        if let image = renderer.uiImage {
-            let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString).appendingPathExtension("png")
-            if let data = image.pngData() {
-                try? data.write(to: url)
-            }
-            conversation.insert(try! MSSticker(contentsOfFileURL: url, localizedDescription: "Sticker")) { error in
-                if let error = error {
-                    print("Failed to insert sticker: \(error.localizedDescription)")
-                }
-            }
-        }
-    }
-    
-    func draw(x: Int, y: Int, value: Int) {
-        if (x >= 0 && x < CANVAS_WIDTH && y >= 0 && y < CANVAS_HEIGHT) {
-            grid[y][x] = value;
-        }
-    }
+//    private func sendAsSticker() {
+//        let renderer = ImageRenderer(content: board(BoardType.export, grid: grid))
+//        if let image = renderer.uiImage {
+//            let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString).appendingPathExtension("png")
+//            if let data = image.pngData() {
+//                try? data.write(to: url)
+//            }
+//            conversation.insert(try! MSSticker(contentsOfFileURL: url, localizedDescription: "Sticker")) { error in
+//                if let error = error {
+//                    print("Failed to insert sticker: \(error.localizedDescription)")
+//                }
+//            }
+//        }
+//    }
+
     
     func clear() {
         for y in 0..<grid.count {

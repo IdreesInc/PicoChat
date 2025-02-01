@@ -13,6 +13,7 @@ import SwiftUI
 class MessagesViewController: MSMessagesAppViewController {
     
     private var presentationStyleWrapper = PresentationStyleWrapper()
+    private var conversationWrapper = ConversationWrapper()
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -47,7 +48,8 @@ class MessagesViewController: MSMessagesAppViewController {
         super.willBecomeActive(with: conversation)
         
         // The conversation is guaranteed to be active here
-        let child = UIHostingController(rootView: SwiftUIView(presentationStyleWrapper: presentationStyleWrapper, conversation: conversation))
+        conversationWrapper.conversation = conversation
+        let child = UIHostingController(rootView: ParentView(presentationStyleWrapper: presentationStyleWrapper, conversationWrapper: conversationWrapper))
 
         // Add the hosting controller's view
         self.view.addSubview(child.view)

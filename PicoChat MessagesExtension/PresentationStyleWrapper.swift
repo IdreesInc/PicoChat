@@ -11,3 +11,8 @@ import Messages
 class PresentationStyleWrapper: ObservableObject {
     @Published var presentationStyle: MSMessagesAppPresentationStyle = .compact
 }
+
+class ConversationWrapper: ObservableObject {
+    @Published var conversation: MSConversation = MSConversation()
+}
+
