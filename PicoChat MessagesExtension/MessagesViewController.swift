@@ -47,7 +47,7 @@ class MessagesViewController: MSMessagesAppViewController {
         super.willBecomeActive(with: conversation)
         
         // The conversation is guaranteed to be active here
-        let child = UIHostingController(rootView: SwiftUIView(presentationStyleWrapper: presentationStyleWrapper, conversation: conversation))
+        let child = UIHostingController(rootView: PicoChatView(presentationStyleWrapper: presentationStyleWrapper, conversation: conversation))
 
         // Add the hosting controller's view
         self.view.addSubview(child.view)
