@@ -22,7 +22,7 @@ struct ParentView: View {
         ZStack {
             OverlayView(touchX: $touchX, touchY: $touchY, touching: $touching)
                 .zIndex(20)
-            PicoChatView(presentationStyleWrapper: presentationStyleWrapper, conversationWrapper: conversationWrapper)
+            PicoChatView(presentationStyleWrapper: presentationStyleWrapper, conversationWrapper: conversationWrapper, touching: $touching)
                 .simultaneousGesture(
                     DragGesture(minimumDistance: 0, coordinateSpace: .named("screen"))
                         .onChanged { value in
@@ -32,10 +32,8 @@ struct ParentView: View {
                             timeOfLastUpdate = Date()
                             touchX = value.location.x
                             touchY = value.location.y
-                            touching = true
                         }
                         .onEnded { _ in
-                            touching = false
                         }
                 )
         }

@@ -24,6 +24,7 @@ struct BoardView: View {
     @Binding var penColorIndex: Int
     @Binding var penLength: Int
     @Binding var rainbowPen: Bool
+    @Binding var touching: Bool
     let takeSnapshot: () -> Void
     let beginNameChange: () -> Void
     
@@ -93,6 +94,7 @@ struct BoardView: View {
             view.gesture(
                 DragGesture(minimumDistance: 0, coordinateSpace: .local)
                     .onChanged { value in
+                        touching = true
                         if inputState == InputState.settingName {
                             return
                         }
@@ -158,6 +160,7 @@ struct BoardView: View {
                     .onEnded { _ in
                         lastTouchLocation = nil
                         drawing = false
+                        touching = false
                     }
             )
             .allowsHitTesting(inputState != InputState.settingName)
@@ -166,6 +169,15 @@ struct BoardView: View {
                     colorPicker()
                 }
             }
+            .background(GeometryReader { proxy in
+                Color.clear
+                    .onAppear {
+                        canvasFrame = proxy.frame(in: .named("screen"))
+                    }
+                    .onChange(of: proxy.frame(in: .named("screen"))) { newFrame in
+                        canvasFrame = newFrame
+                    }
+            })
         }
         .applyIf(type != BoardType.export) { view in
             view
@@ -174,18 +186,6 @@ struct BoardView: View {
                 .padding(.leading, HORIZONTAL_PADDING)
                 .padding(.trailing, HORIZONTAL_PADDING)
                 .scaleEffect(CGFloat(SCALE))
-        }
-        .applyIf(type == BoardType.interactive) { view in
-            view
-                .background(GeometryReader { proxy in
-                    Color.clear
-                        .onAppear {
-                            canvasFrame = proxy.frame(in: .named("screen"))
-                        }
-                        .onChange(of: proxy.frame(in: .named("screen"))) { newFrame in
-                            canvasFrame = newFrame
-                        }
-                })
         }
         .applyIf(type == BoardType.export) { view in
             view
@@ -246,7 +246,6 @@ struct NameView: View, Equatable {
     }
     
     var body: some View {
-        let _ = Self._printChanges()
         Canvas(opaque: false,
                colorMode: .linear,
                rendersAsynchronously: true

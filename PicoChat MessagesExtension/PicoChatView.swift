@@ -180,6 +180,8 @@ struct PicoChatView: View {
     @ObservedObject var presentationStyleWrapper: PresentationStyleWrapper
     @ObservedObject var conversationWrapper: ConversationWrapper
     
+    @Binding var touching: Bool
+    
     @State private var grid: [[Int]] = Array(repeating: Array(repeating: 0, count: CANVAS_WIDTH), count: CANVAS_HEIGHT)
     @State private var lastTouchLocation: CGPoint? = nil
     @State private var penType = PenType.pen
@@ -330,8 +332,9 @@ struct PicoChatView: View {
                     
                     // Left buttons
                     leftControls()
-                        .padding(.leading, 3)
-                        .padding(.trailing, 3)
+                    
+                    Spacer()
+                        .frame(minWidth: 0)
                     
                     // Canvas and Keyboard Modal
                     VStack(spacing: 0) {
@@ -564,6 +567,7 @@ struct PicoChatView: View {
             penColorIndex: $penColorIndex,
             penLength: $penLength,
             rainbowPen: $rainbowPen,
+            touching: $touching,
             takeSnapshot: takeSnapshot,
             beginNameChange: beginNameChange
         )
@@ -771,22 +775,6 @@ struct PicoChatView: View {
             }
         }
     }
-    
-//    private func sendAsSticker() {
-//        let renderer = ImageRenderer(content: board(BoardType.export, grid: grid))
-//        if let image = renderer.uiImage {
-//            let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString).appendingPathExtension("png")
-//            if let data = image.pngData() {
-//                try? data.write(to: url)
-//            }
-//            conversation.insert(try! MSSticker(contentsOfFileURL: url, localizedDescription: "Sticker")) { error in
-//                if let error = error {
-//                    print("Failed to insert sticker: \(error.localizedDescription)")
-//                }
-//            }
-//        }
-//    }
-
     
     func clear() {
         for y in 0..<grid.count {
