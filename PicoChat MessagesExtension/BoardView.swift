@@ -27,6 +27,7 @@ struct BoardView: View {
     @Binding var touching: Bool
     let takeSnapshot: () -> Void
     let beginNameChange: () -> Void
+    let captureWork: () -> Void
     
     var body: some View {
         Canvas(
@@ -158,6 +159,9 @@ struct BoardView: View {
                         lastTouchLocation = value.location
                     }
                     .onEnded { _ in
+                        if drawing {
+                            captureWork()
+                        }
                         lastTouchLocation = nil
                         drawing = false
                         touching = false

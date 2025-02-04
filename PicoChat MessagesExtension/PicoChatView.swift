@@ -206,10 +206,10 @@ struct PicoChatView: View {
     @State private var oldName: [String]? = nil
     @State private var oldColor: ColorTheme? = nil
     @State private var inputState = InputState.normal
-    
     @State private var favorites = [Snapshot]()
     @State private var favoritesAlertPresented = false
     @State private var landscapeMode = UIScreen.main.bounds.width > UIScreen.main.bounds.height
+    @State private var previousWork: Snapshot? = nil
     
     let keyboards = [
         Keyboard.lowercase: [
@@ -268,6 +268,23 @@ struct PicoChatView: View {
         }
         UserDefaults.standard.set(encodedName, forKey: "name")
         UserDefaults.standard.set(colorIndex, forKey: "colorIndex")
+        storePreviousWork()
+    }
+    
+    func captureWork() {
+        print("Capturing work")
+        let snapshot = Snapshot(grid: grid.map { $0 }, lastGlyphLocation: [lastGlyphLocation[0], lastGlyphLocation[1]])
+        previousWork = snapshot
+        storePreviousWork()
+    }
+    
+    func storePreviousWork() {
+        let encodedPreviousWork = try? JSONEncoder().encode(previousWork)
+        if let encodedPreviousWork = encodedPreviousWork {
+            UserDefaults.standard.set(encodedPreviousWork, forKey: "previousWork")
+        } else {
+            print("Failed to encode previousWork")
+        }
     }
     
     func loadSettings() {
@@ -289,28 +306,21 @@ struct PicoChatView: View {
                 print("Failed to decode favorites")
             }
         }
+        loadPreviousWork()
     }
     
-//    @State private var canvasTouchLocation: CGPoint?
-    @State private var showStylus = false
-    
-//    struct StylusView: View {
-//        var canvasTouchLocation: CGPoint?
-//        var showStylus: Bool
-//        
-//        var body: some View {
-//            let _ = Self._printChanges()
-//            Image("stylus")
-//                .resizable()
-//                .frame(width: 350, height: 350)
-//                .zIndex(2)
-//                .position(x: (canvasTouchLocation?.x ?? 1000) + 350/2,
-//                          y: (canvasTouchLocation?.y ?? 1000) + 350/2)
-//                .opacity(0.7)
-//                .animation(.easeInOut(duration: 0.5), value: showStylus)
-//        }
-//    }
-    
+    func loadPreviousWork() {
+        if let encodedPreviousWork = UserDefaults.standard.data(forKey: "previousWork") {
+            if let decodedPreviousWork = try? JSONDecoder().decode(Snapshot.self, from: encodedPreviousWork) {
+                previousWork = decodedPreviousWork
+                loadSnapshot(specific: decodedPreviousWork)
+                print("Loaded previous work")
+            } else {
+                print("Failed to decode previousWork")
+            }
+        }
+    }
+        
     var body: some View {
         let modalPadding: CGFloat = 7
         
@@ -569,7 +579,8 @@ struct PicoChatView: View {
             rainbowPen: $rainbowPen,
             touching: $touching,
             takeSnapshot: takeSnapshot,
-            beginNameChange: beginNameChange
+            beginNameChange: beginNameChange,
+            captureWork: captureWork
         )
     }
     
@@ -734,6 +745,7 @@ struct PicoChatView: View {
                             if inputState == InputState.normal {
                                 takeSnapshot()
                                 clear()
+                                
                             } else if inputState == InputState.settingName {
                                 cancelNameChange()
                             }
@@ -783,6 +795,7 @@ struct PicoChatView: View {
             }
         }
         lastGlyphLocation = [STARTING_X, STARTING_Y]
+        captureWork()
     }
     
     func drawGlyph(x: Int, y: Int, glyph: String, snapshot: Bool = true) {
@@ -792,6 +805,9 @@ struct PicoChatView: View {
         let pixels = getTypedPixels(x: x, y: y, glyph: glyph)
         for pixel in pixels {
             draw(x: pixel[0], y: pixel[1], value: pixel[2])
+        }
+        if snapshot {
+            captureWork()
         }
     }
     
@@ -814,6 +830,7 @@ struct PicoChatView: View {
             let lastGlyphLocationClone = snapshot.lastGlyphLocation.map { $0 }
             grid = gridClone
             lastGlyphLocation = lastGlyphLocationClone
+            captureWork()
             print("Snapshots: \(snapshots.count)")
         } else {
             print("No snapshot to load")
