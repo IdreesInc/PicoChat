@@ -90,10 +90,6 @@ struct KeyView: View {
     var removeGlyphFromName: () -> Void
     var confirmNameChange: () -> Void
     
-//        static func == (lhs: KeyView, rhs: KeyView) -> Bool {
-//            return lhs.glyph == rhs.glyph
-//        }
-    
     var body: some View {
         let _ = Self._printChanges()
         

@@ -17,14 +17,16 @@ struct Sizing {
     var bottomMargin: CGFloat
     var rightIconPadding: CGFloat
     var keyCanvasScale: CGFloat
+    var maxHeight: CGFloat
 }
 
 let SIZINGS = [
-    "normal": Sizing(scale: 1.5 * UIScreen.main.bounds.width / 393, keyboardOverride: nil, topMargin: 15, bottomMargin: 20, rightIconPadding: 8, keyCanvasScale: 1.4),
-    "small": Sizing(scale: 1.15, keyboardOverride: 280, topMargin: 15, bottomMargin: 3, rightIconPadding: 5, keyCanvasScale: 1.3)
+    "normal": Sizing(scale: 1.5 * UIScreen.main.bounds.width / 393, keyboardOverride: nil, topMargin: 15, bottomMargin: 20, rightIconPadding: 8, keyCanvasScale: 1.4, maxHeight: UIScreen.main.bounds.width * 0.8),
+    "small": Sizing(scale: 1.15, keyboardOverride: 280, topMargin: 15, bottomMargin: 3, rightIconPadding: 5, keyCanvasScale: 1.3, maxHeight: UIScreen.main.bounds.width * 0.8),
+    "ipad": Sizing(scale: 1.5, keyboardOverride: 280, topMargin: 30, bottomMargin: 3, rightIconPadding: 5, keyCanvasScale: 1.3, maxHeight: 305)
 ]
 
-let sizing = UIScreen.main.bounds.height > 700 ? SIZINGS["normal"]! : SIZINGS["small"]!
+let sizing = UIDevice.current.userInterfaceIdiom == .pad ? SIZINGS["ipad"]! : UIScreen.main.bounds.height <= 700 ? SIZINGS["small"]! : SIZINGS["normal"]!
 
 let SCALE = sizing.scale
 let KEYBOARD_OVERRIDE: CGFloat? = sizing.keyboardOverride
@@ -32,6 +34,7 @@ let TOP_MARGIN = sizing.topMargin
 let BOTTOM_MARGIN = sizing.bottomMargin
 let RIGHT_ICON_PADDING = sizing.rightIconPadding
 let KEY_CANVAS_SCALE = sizing.keyCanvasScale
+let MAX_HEIGHT = sizing.maxHeight
 let RIGHT_BUTTON_CANVAS_SCALE = 1.6
 let CANVAS_WIDTH = 234
 let NOTEBOOK_LINE_SPACING = 18
@@ -47,7 +50,6 @@ let MAX_NAME_LENGTH = 16
 let HORIZONTAL_MARGIN = 5
 let KEY_WIDTH = 23.0
 let RIGHT_BUTTON_WIDTH = 52.0
-let MAX_HEIGHT = UIScreen.main.bounds.width * 0.8
 
 let DEFAULT_NAME = ["P", "i", "c", "o", "C", "h", "a", "t"]
 
@@ -402,7 +404,7 @@ struct PicoChatView: View {
                 .zIndex(2)
                 
                 // Favorites in portrait
-                if !landscapeMode && presentationStyleWrapper.presentationStyle == .expanded {
+                if showFavorites() {
                     favoritesView()
                         .padding(.top, modalPadding)
                 }
@@ -417,8 +419,12 @@ struct PicoChatView: View {
         .onGeometryChange(for: CGRect.self) { proxy in
             proxy.frame(in: .global)
         } action: { newValue in
-            landscapeMode = UIScreen.main.bounds.width > UIScreen.main.bounds.height
+            landscapeMode = UIScreen.main.bounds.width > UIScreen.main.bounds.height && UIDevice.current.userInterfaceIdiom != .pad
         }
+    }
+    
+    func showFavorites() -> Bool {
+        return UIDevice.current.userInterfaceIdiom == .pad || (!landscapeMode && presentationStyleWrapper.presentationStyle == .expanded);
     }
     
     func newLine() {
