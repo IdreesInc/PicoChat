@@ -415,6 +415,7 @@ struct PicoChatView: View {
         .coordinateSpace(name: "screen")
         .onAppear {
             loadSettings()
+            recordMetric("open")
         }
         .onGeometryChange(for: CGRect.self) { proxy in
             proxy.frame(in: .global)
@@ -791,7 +792,57 @@ struct PicoChatView: View {
                     print("Failed to insert image: \(error.localizedDescription)")
                 }
             }
+            recordMetric("sent")
         }
+    }
+    
+    private func recordMetric(_ metricName: String) {
+        let API_URL = "https://metric-api.newrelic.com/metric/v1"
+        let METRIC_PREFIX = "picochat"
+        
+        guard let newRelicKey = Bundle.main.object(forInfoDictionaryKey: "NEW_RELIC_KEY") as? String else {
+            print("New Relic API key not found")
+            return
+        }
+                
+        let payload: [[String: Any]] = [
+            [
+                "metrics": [
+                    [
+                        "name": "\(METRIC_PREFIX).\(metricName)",
+                        "type": "count",
+                        "value": 1,
+                        "timestamp": Int(Date().timeIntervalSince1970 * 1000),
+                        "interval.ms": 1
+                    ]
+                ]
+            ]
+        ]
+        
+        guard let jsonData = try? JSONSerialization.data(withJSONObject: payload, options: []) else {
+            print("Failed to serialize JSON while sending event")
+            return
+        }
+        
+        var request = URLRequest(url: URL(string: API_URL)!)
+        request.httpMethod = "POST"
+        request.addValue(newRelicKey, forHTTPHeaderField: "Api-Key")
+        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = jsonData
+        
+        let task = URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                print("Error sending event: \(error.localizedDescription)")
+                return
+            }
+            
+            if let httpResponse = response as? HTTPURLResponse, !(200...299).contains(httpResponse.statusCode) {
+                print("Response Code:", httpResponse.statusCode)
+                print("Response Headers:", httpResponse.allHeaderFields)
+            }
+        }
+        
+        task.resume()
     }
     
     func clear() {

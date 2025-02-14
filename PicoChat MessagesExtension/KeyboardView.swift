@@ -91,7 +91,7 @@ struct KeyView: View {
     var confirmNameChange: () -> Void
     
     var body: some View {
-        let _ = Self._printChanges()
+//        let _ = Self._printChanges()
         
         let isControl = Glyphs.controls[glyph] != nil
         var keyBgColor = isControl ? CONTROL_BUTTON_COLOR : KEYBOARD_BUTTON_COLOR
