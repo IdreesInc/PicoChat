@@ -133,8 +133,9 @@ struct KeyView: View {
                 context.fill(Path(CGRect(origin: .zero, size: size)), with: .color(keyBgColor))
                 for y in 0..<height {
                     for x in 0..<width {
-                        if pixels[y][x] == 1 {
-                            context.fill(Path(CGRect(x: x, y: y + yMod, width: 1, height: 1)), with: .color(keyTextColor))
+                        if pixels[y][x] != 0 {
+                            let ink = pixels[y][x] == 1 ? keyTextColor : PEN_COLORS[pixels[y][x] - 1]
+                            context.fill(Path(CGRect(x: x, y: y + yMod, width: 1, height: 1)), with: .color(ink))
                         }
                     }
                 }

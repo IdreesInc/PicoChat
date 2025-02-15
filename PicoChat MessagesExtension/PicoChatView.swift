@@ -106,6 +106,15 @@ let PEN_COLORS = [
     Color(hex: "#0086ff"),
     Color(hex: "#0034ff"),
     Color(hex: "#3400ff"),
+    // Extra colors
+    Color(hex: "#FBAAF3"),
+    Color(hex: "#9ADBFB"),
+    Color(hex: "#FB3849"),
+    Color(hex: "#ffa500"),
+    Color(hex: "#FBFB41"),
+    Color(hex: "#00C300"),
+    Color(hex: "#0049CB"),
+    Color(hex: "#9A41CB"),
 ]
 
 let moonPhase = TinyMoon.calculateMoonPhase().emoji
@@ -254,7 +263,7 @@ struct PicoChatView: View {
             ["✨", "☕", "🎏", "🐌", "JUNIMO", "⛩", "🌸", "🌼", "💽", "💾", "🍙", "SMALL_BACKSPACE"],
             ["PYORO", "🐈", "🧋", "🐸", "💔", "❄", "🪱", "🪦", "💀", "🦙", "🔥", "SMALL_ENTER"],
             ["☹️", ":P", "🫤", "🙃", "uwu", "🐇", "🎮", "👻", "🔪", "SPACER", "SPACER", "SMALL_SPACE"],
-            ["🌑", "🌒", "🌓", "🌔", "🌕", "🌖", "🌗", "🌘", "SPACER", "SPACER", "SPACER", "SPACER"],
+            ["🌑", "🌒", "🌓", "🌔", "🌕", "🌖", "🌗", "🌘", "🏳️‍🌈", "🏳️‍⚧️", "SPACER", "SPACER"],
         ],
     ]
     

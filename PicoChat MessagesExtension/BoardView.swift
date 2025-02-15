@@ -81,7 +81,7 @@ struct BoardView: View {
                     let y = pixel[1]
                     let value = pixel[2]
                     if value != 0 {
-                        context.fill(Path(CGRect(x: x, y: y, width: 1, height: 1)), with: .color(PEN_COLORS[0]))
+                        context.fill(Path(CGRect(x: x, y: y, width: 1, height: 1)), with: .color(PEN_COLORS[value - 1]))
                     }
                 }
             }
@@ -206,7 +206,7 @@ struct BoardView: View {
             if penLength >= 3 {
                 penLength = 0
                 penColorIndex += 1
-                if penColorIndex >= PEN_COLORS.count {
+                if penColorIndex > 12 {
                     penColorIndex = 1
                 }
             }
