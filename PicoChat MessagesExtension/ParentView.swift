@@ -21,7 +21,7 @@ struct ParentView: View {
     @ObservedObject var presentationStyleWrapper: PresentationStyleWrapper
     @ObservedObject var conversationWrapper: ConversationWrapper
     
-    @State var stylusOrientation = StylusOrientation.left
+    @State var stylusOrientation = StylusOrientation.right
     @State var touching: Bool = false
     @State var touchX: CGFloat = 0
     @State var touchY: CGFloat = 0
