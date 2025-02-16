@@ -192,6 +192,7 @@ struct PicoChatView: View {
     @ObservedObject var conversationWrapper: ConversationWrapper
     
     @Binding var touching: Bool
+    @Binding var stylusOrientation: StylusOrientation
     
     @State private var grid: [[Int]] = Array(repeating: Array(repeating: 0, count: CANVAS_WIDTH), count: CANVAS_HEIGHT)
     @State private var lastTouchLocation: CGPoint? = nil
@@ -216,6 +217,7 @@ struct PicoChatView: View {
     @State private var name = DEFAULT_NAME.map { $0 }
     @State private var oldName: [String]? = nil
     @State private var oldColor: ColorTheme? = nil
+    @State private var oldOrientation: StylusOrientation? = nil
     @State private var inputState = InputState.normal
     @State private var favorites = [Snapshot]()
     @State private var favoritesAlertPresented = false
@@ -277,8 +279,10 @@ struct PicoChatView: View {
         } else {
             print("Failed to encode favorites")
         }
+        let encodedStylusOrientation = try? JSONEncoder().encode(stylusOrientation)
         UserDefaults.standard.set(encodedName, forKey: "name")
         UserDefaults.standard.set(colorIndex, forKey: "colorIndex")
+        UserDefaults.standard.set(encodedStylusOrientation, forKey: "stylusOrientation")
         storePreviousWork()
     }
     
@@ -315,6 +319,14 @@ struct PicoChatView: View {
                 print("Loaded " + String(favorites.count) + " favorites")
             } else {
                 print("Failed to decode favorites")
+            }
+        }
+        if let encodedStylusOrientation = UserDefaults.standard.data(forKey: "stylusOrientation") {
+            if let decodedStylusOrientation = try? JSONDecoder().decode(StylusOrientation.self, from: encodedStylusOrientation) {
+                stylusOrientation = decodedStylusOrientation
+                print("Loaded stylus orientation")
+            } else {
+                print("Failed to decode stylus orientation")
             }
         }
         loadPreviousWork()
@@ -594,8 +606,11 @@ struct PicoChatView: View {
             penLength: $penLength,
             rainbowPen: $rainbowPen,
             touching: $touching,
+            stylusOrientation: $stylusOrientation,
             takeSnapshot: takeSnapshot,
             beginNameChange: beginNameChange,
+            confirmNameChange: confirmNameChange,
+            cancelNameChange: cancelNameChange,
             captureWork: captureWork
         )
     }
@@ -610,22 +625,25 @@ struct PicoChatView: View {
         inputState = InputState.settingName
         oldName = name.map { $0 }
         oldColor = colorTheme
+        oldOrientation = stylusOrientation
         if name == DEFAULT_NAME {
             name = []
         }
         takeSnapshot()
         clear()
+        newLine()
         // Type your name and select a color
         let letters = ["T", "y", "p", "e", " ", "y", "o", "u", "r", " ", "n", "a", "m", "e", " ", "a", "n", "d", " ", "s", "e", "l", "e", "c", "t", " ", "a", " ", "c", "o", "l", "o", "r"]
-        newLine()
         for letter in letters {
             type(glyph: letter, snapshot: false)
         }
-        newLine()
-        // Press ENTER to confirm or CLEAR to cancel
-        let enter = ["P", "r", "e", "s", "s", " ", "E", "N", "T", "E", "R", " ", "t", "o", " ", "c", "o", "n", "f", "i", "r", "m", " ", "o", "r", " ", "C", "L", "E", "A", "R", " ", "t", "o", " ", "c", "a", "n", "c", "e", "l",]
-        for letter in enter {
-            type(glyph: letter, snapshot: false)
+        if stylusOrientation != StylusOrientation.disabled {
+            newLine()
+            newLine()
+            let stylusLabel = ["S", "t", "y", "l", "u", "s", ":"]
+            for letter in stylusLabel {
+                type(glyph: letter, snapshot: false)
+            }
         }
     }
     
@@ -648,6 +666,7 @@ struct PicoChatView: View {
         inputState = InputState.normal
         oldName = nil
         oldColor = nil
+        oldOrientation = nil
         loadSnapshot()
         storeSettings()
     }
@@ -656,6 +675,7 @@ struct PicoChatView: View {
         inputState = InputState.normal
         name = oldName.map { $0 } ?? []
         colorTheme = oldColor ?? colorTheme
+        stylusOrientation = oldOrientation ?? stylusOrientation
         oldName = nil
         oldColor = nil
         loadSnapshot()
@@ -946,9 +966,6 @@ func getTypedPixels(x: Int, y: Int, glyph: String) -> [[Int]] {
     var index = 0
     for row in 0..<height {
         for col in 0..<width {
-            if pixels[row][col] == 0 {
-                continue
-            }
             returnedPixels[index][0] = x + col
             returnedPixels[index][1] = y + row - height + yMod
             returnedPixels[index][2] = pixels[row][col]

@@ -25,8 +25,11 @@ struct BoardView: View {
     @Binding var penLength: Int
     @Binding var rainbowPen: Bool
     @Binding var touching: Bool
+    @Binding var stylusOrientation: StylusOrientation
     let takeSnapshot: () -> Void
     let beginNameChange: () -> Void
+    let confirmNameChange: () -> Void
+    let cancelNameChange: () -> Void
     let captureWork: () -> Void
     
     var body: some View {
@@ -168,9 +171,30 @@ struct BoardView: View {
                     }
             )
             .allowsHitTesting(inputState != InputState.settingName)
-            .overlay(alignment: .bottom) {
+            .overlay(alignment: .center) {
                 if inputState == InputState.settingName {
-                    colorPicker()
+                    ZStack {
+                        colorPicker()
+                        if stylusOrientation != .disabled {
+                            HStack(spacing: 6) {
+                                CustomButton(action: {
+                                    stylusOrientation = .left
+                                }, glyphs: ["L", "e", "f", "t"], pressedBackground: colorTheme.controlPressedBackground, pressedStroke: colorTheme.keyPressedText, active: stylusOrientation == .left)
+                                CustomButton(action: {
+                                    stylusOrientation = .right
+                                }, glyphs: ["R", "i", "g", "h", "t"], pressedBackground: colorTheme.controlPressedBackground, pressedStroke: colorTheme.keyPressedText, active: stylusOrientation == .right)
+                                CustomButton(action: {
+                                    stylusOrientation = .hidden
+                                }, glyphs: ["N", "o", "n", "e"], pressedBackground: colorTheme.controlPressedBackground, pressedStroke: colorTheme.keyPressedText, active: stylusOrientation == .hidden)
+                            }
+                            .offset(x: -20, y: CGFloat(NOTEBOOK_LINE_SPACING) + 1)
+                        }
+                        HStack(spacing: 10) {
+                            CustomButton(action: cancelNameChange, glyphs: ["C", "a", "n", "c", "e", "l"], pressedBackground: colorTheme.controlPressedBackground, pressedStroke: colorTheme.keyPressedText, active: false)
+                            CustomButton(action: confirmNameChange, glyphs: ["C", "o", "n", "f", "i", "r", "m"], pressedBackground: colorTheme.controlPressedBackground, pressedStroke: colorTheme.keyPressedText, active: false)
+                        }
+                        .offset(y: CGFloat(NOTEBOOK_LINE_SPACING * 2))
+                    }
                 }
             }
             .background(GeometryReader { proxy in
@@ -234,7 +258,6 @@ struct BoardView: View {
                 }
             }
         }
-        .offset(y: CGFloat(-5 - NOTEBOOK_LINE_SPACING))
     }
 }
 

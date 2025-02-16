@@ -15,13 +15,15 @@ struct OverlayView: View {
     @Binding var stylusOrientation: StylusOrientation
     
     var body: some View {
-        if stylusOrientation != .disabled {
+        if stylusOrientation != .disabled && stylusOrientation != .hidden {
             ZStack {
-                let x = touching ? touchX + 350/2 : UIScreen.main.nativeBounds.width
+                let mod: CGFloat = stylusOrientation == .left ? -1 : 1
+                let x = touching ? (touchX + 350/2 * mod) : (UIScreen.main.nativeBounds.width * mod)
                 let y = touching ? touchY + 350/2 : UIScreen.main.nativeBounds.width
                 Image("stylus")
                     .resizable()
                     .frame(width: 350, height: 350)
+                    .scaleEffect(x: mod)
                     .zIndex(2)
                     .position(x: x, y: y)
                     .opacity(0.7)
