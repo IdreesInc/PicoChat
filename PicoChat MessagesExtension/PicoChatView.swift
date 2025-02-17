@@ -962,14 +962,13 @@ func getTypedPixels(x: Int, y: Int, glyph: String) -> [[Int]] {
     let width = pixels[0].count
     let height = pixels.count
     let yMod = adjustments[1]
-    var returnedPixels = Array(repeating: Array(repeating: 0, count: 3), count: width * height)
-    var index = 0
+    var returnedPixels: [[Int]] = []
     for row in 0..<height {
         for col in 0..<width {
-            returnedPixels[index][0] = x + col
-            returnedPixels[index][1] = y + row - height + yMod
-            returnedPixels[index][2] = pixels[row][col]
-            index += 1
+            let pixelValue = pixels[row][col]
+            if pixelValue != 0 {
+                returnedPixels.append([x + col, y + row - height + yMod, pixelValue])
+            }
         }
     }
     return returnedPixels
