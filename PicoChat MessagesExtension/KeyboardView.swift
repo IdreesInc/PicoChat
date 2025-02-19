@@ -127,8 +127,7 @@ struct KeyView: View {
         return VStack(spacing: 0) {
             Canvas(
                 opaque: false,
-                colorMode: .linear,
-                rendersAsynchronously: true
+                colorMode: .linear
             ) { context, size in
                 context.fill(Path(CGRect(origin: .zero, size: size)), with: .color(keyBgColor))
                 for y in 0..<height {
