@@ -116,6 +116,7 @@ let PEN_COLORS = [
     Color(hex: "#0049CB"),
     Color(hex: "#9A41CB"),
 ]
+let UNOWN = ["u", "n", "o", "w", "n"]
 
 let moonPhase = TinyMoon.calculateMoonPhase().emoji
 
@@ -174,6 +175,7 @@ enum Keyboard {
     case symbols
     case emoji
     case extra
+    case unown
 }
 
 enum InputState {
@@ -223,6 +225,7 @@ struct PicoChatView: View {
     @State private var favoritesAlertPresented = false
     @State private var landscapeMode = UIScreen.main.bounds.width > UIScreen.main.bounds.height
     @State private var previousWork: Snapshot? = nil
+    @State private var typed: [String] = []
     
     let keyboards = [
         Keyboard.lowercase: [
@@ -266,6 +269,13 @@ struct PicoChatView: View {
             ["PYORO", "🐈", "🧋", "🐸", "💔", "❄", "🪱", "🪦", "💀", "🦙", "🔥", "SMALL_ENTER"],
             ["☹️", ":P", "🫤", "🙃", "uwu", "🐇", "🎮", "👻", "🔪", "🚗", "🏮", "SMALL_SPACE"],
             ["🌑", "🌒", "🌓", "🌔", "🌕", "🌖", "🌗", "🌘", "✨", "🌟", "🏳️‍🌈", "🏳️‍⚧️"],
+        ],
+        Keyboard.unown: [
+            ["!", "@", "#", "$", "%", "^", "&", "*", "(", ")", "_", "+"],
+            ["HALF_SPACER", "UNOWN_Q", "UNOWN_W", "UNOWN_E", "UNOWN_R", "UNOWN_T", "UNOWN_Y", "UNOWN_U", "UNOWN_I", "UNOWN_O", "UNOWN_P", "BACKSPACE"],
+            ["CAPS", "UNOWN_A", "UNOWN_S", "UNOWN_D", "UNOWN_F", "UNOWN_G", "UNOWN_H", "UNOWN_J", "UNOWN_K", "UNOWN_L", "ENTER"],
+            ["SHIFT", "UNOWN_Z", "UNOWN_X", "UNOWN_C", "UNOWN_V", "UNOWN_B", "UNOWN_N", "UNOWN_M", ",", "UNOWN_!", "UNOWN_?"],
+            ["SPACER", ":", "~", "SPACE", "{", "}"]
         ],
     ]
     
@@ -470,8 +480,16 @@ struct PicoChatView: View {
         drawGlyph(x: nextX, y: nextY, glyph: text, snapshot: snapshot ?? true)
         lastGlyphLocation[0] = nextX + textWidth
         lastGlyphLocation[1] = nextY
+        if snapshot ?? true {
+            captureWork()
+        }
         if keyboard == Keyboard.uppercase && !capsLock {
             keyboard = Keyboard.lowercase
+        }
+        typed.append(glyph)
+        if typed.count >= UNOWN.count && typed.suffix(UNOWN.count) == UNOWN {
+            keyboard = Keyboard.unown
+            typed = []
         }
     }
     
@@ -882,6 +900,7 @@ struct PicoChatView: View {
         }
         lastGlyphLocation = [STARTING_X, STARTING_Y]
         captureWork()
+        typed = []
     }
     
     func drawGlyph(x: Int, y: Int, glyph: String, snapshot: Bool = true) {
@@ -891,9 +910,6 @@ struct PicoChatView: View {
         let pixels = getTypedPixels(x: x, y: y, glyph: glyph)
         for pixel in pixels {
             draw(x: pixel[0], y: pixel[1], value: pixel[2])
-        }
-        if snapshot {
-            captureWork()
         }
     }
     
@@ -957,7 +973,7 @@ struct PicoChatView: View {
 }
 
 func getTypedPixels(x: Int, y: Int, glyph: String) -> [[Int]] {
-    let pixels = Glyphs.glyphPixels[glyph] ?? Glyphs.glyphPixels["A"]!
+    let pixels = Glyphs.glyphPixels[glyph] ?? Glyphs.glyphPixels["?"]!
     let adjustments = Glyphs.adjustments[glyph] ?? [0, 0]
     let width = pixels[0].count
     let height = pixels.count
