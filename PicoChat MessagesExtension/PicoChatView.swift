@@ -365,7 +365,11 @@ struct PicoChatView: View {
             layout {
                 // Favorites in landscape
                 if landscapeMode {
-                    favoritesView()
+                    if favorites.isEmpty {
+                        favoritesPlaceholder()
+                    } else {
+                        favoritesView()
+                    }
                 }
                 
                 // App
@@ -436,8 +440,13 @@ struct PicoChatView: View {
                 
                 // Favorites in portrait
                 if showFavorites() {
-                    favoritesView()
-                        .padding(.top, modalPadding)
+                    if favorites.isEmpty {
+                        favoritesPlaceholder()
+                            .padding(.top, modalPadding)
+                    } else {
+                        favoritesView()
+                            .padding(.top, modalPadding)
+                    }
                 }
             }
         }
@@ -568,6 +577,24 @@ struct PicoChatView: View {
         .layoutPriority(1)
     }
     
+    func favoritesPlaceholder() -> some View {
+        VStack {
+            Spacer()
+            HStack {
+                Spacer()
+                Text("No favorites yet")
+                    .font(.system(size: 20))
+                    .offset(y: -5)
+                    .opacity(0.8)
+                Spacer()
+            }
+            Spacer()
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .frame(minWidth: 100)
+        .layoutPriority(2)
+    }
+    
     func favoritesView() -> some View {
         List {
             // Favorites
@@ -576,18 +603,25 @@ struct PicoChatView: View {
                     Spacer()
                         .frame(minWidth: 0)
                     board(BoardType.capture, grid: Binding.constant(favorite.grid))
-                    .swipeActions(edge: .trailing) {
-                        Button(role: .destructive) { deleteFavorite(favorite: favorite) } label: {
-                            Label("Delete", systemImage: "trash")
+                        .swipeActions(edge: .trailing) {
+                            Button(role: .destructive) { deleteFavorite(favorite: favorite) } label: {
+                                Label("Delete", systemImage: "trash")
+                            }
                         }
-                    }
-                    .onTapGesture {
-                        takeSnapshot()
-                        loadSnapshot(specific: favorite)
-                    }
-                    .applyIf(landscapeMode) { view in
-                        view.scaleEffect(0.9)
-                    }
+                        .onTapGesture {
+                            takeSnapshot()
+                            loadSnapshot(specific: favorite)
+                        }
+                        .applyIf(landscapeMode) { view in
+                            view.scaleEffect(0.9)
+                        }
+                        .overlay(alignment: .topTrailing) {
+                            CustomButton(action: {
+                                deleteFavorite(favorite: favorite)
+                            }, glyphs: ["✕"], pressedBackground: COLORS[2].controlPressedBackground, pressedStroke: COLORS[2].keyPressedText, active: false)
+                            .scaleEffect(SCALE)
+                            .offset(x: -8 * PIXEL_SIZE, y: 8 * PIXEL_SIZE)
+                        }
                     Spacer()
                         .frame(minWidth: 0)
                 }
