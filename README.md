@@ -1,5 +1,7 @@
 # PicoChat
 
+![](https://img.shields.io/github/license/IdreesInc/PicoChat)
+
 ## [`Download it here!`](https://apps.apple.com/us/app/picochat/id6741395468)
 <br/>
 
