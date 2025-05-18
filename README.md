@@ -5,7 +5,8 @@
 ## [`Download it here!`](https://apps.apple.com/us/app/picochat/id6741395468)
 <br/>
 
-![](images/cropped-preview.png)
+
+<img src="images/cropped-preview.png" width="430">
 
 An open-source iMessage app that allows you to send pixel art sketches to your friends!
 
