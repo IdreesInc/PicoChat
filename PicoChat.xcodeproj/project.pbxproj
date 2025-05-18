@@ -37,7 +37,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		4A80EF7E2D35EF03009D41B0 /* PicoChat.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PicoChat.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		4A80EF7E2D35EF03009D41B0 /* PicoChat for iMessage.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "PicoChat for iMessage.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		4A80EF872D35EF06009D41B0 /* PicoChat MessagesExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "PicoChat MessagesExtension.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
 		4A80EF8C2D35EF06009D41B0 /* Messages.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Messages.framework; path = System/Library/Frameworks/Messages.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
@@ -94,7 +94,7 @@
 		4A80EF7F2D35EF03009D41B0 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				4A80EF7E2D35EF03009D41B0 /* PicoChat.app */,
+				4A80EF7E2D35EF03009D41B0 /* PicoChat for iMessage.app */,
 				4A80EF872D35EF06009D41B0 /* PicoChat MessagesExtension.appex */,
 			);
 			name = Products;
@@ -111,9 +111,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		4A80EF7D2D35EF03009D41B0 /* PicoChat */ = {
+		4A80EF7D2D35EF03009D41B0 /* PicoChat for iMessage */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 4A80EF9E2D35EF07009D41B0 /* Build configuration list for PBXNativeTarget "PicoChat" */;
+			buildConfigurationList = 4A80EF9E2D35EF07009D41B0 /* Build configuration list for PBXNativeTarget "PicoChat for iMessage" */;
 			buildPhases = (
 				4A80EF7C2D35EF03009D41B0 /* Resources */,
 				4A80EF9D2D35EF07009D41B0 /* Embed Foundation Extensions */,
@@ -126,11 +126,11 @@
 			fileSystemSynchronizedGroups = (
 				4A80EF802D35EF03009D41B0 /* PicoChat */,
 			);
-			name = PicoChat;
+			name = "PicoChat for iMessage";
 			packageProductDependencies = (
 			);
 			productName = PicoChat;
-			productReference = 4A80EF7E2D35EF03009D41B0 /* PicoChat.app */;
+			productReference = 4A80EF7E2D35EF03009D41B0 /* PicoChat for iMessage.app */;
 			productType = "com.apple.product-type.application.messages";
 		};
 		4A80EF862D35EF06009D41B0 /* PicoChat MessagesExtension */ = {
@@ -181,6 +181,7 @@
 			knownRegions = (
 				en,
 				Base,
+				"en-GB",
 			);
 			mainGroup = 4A80EF772D35EF03009D41B0;
 			minimizedProjectReferenceProxies = 1;
@@ -192,7 +193,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				4A80EF7D2D35EF03009D41B0 /* PicoChat */,
+				4A80EF7D2D35EF03009D41B0 /* PicoChat for iMessage */,
 				4A80EF862D35EF06009D41B0 /* PicoChat MessagesExtension */,
 			);
 		};
@@ -239,7 +240,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = "iMessage App Icon";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_TEAM = 4QHN4728NU;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "PicoChat MessagesExtension/Info.plist";
@@ -251,7 +252,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.idreesinc.PicoChat.MessagesExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -266,7 +267,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = "iMessage App Icon";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_TEAM = 4QHN4728NU;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "PicoChat MessagesExtension/Info.plist";
@@ -278,7 +279,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.idreesinc.PicoChat.MessagesExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -417,14 +418,15 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_TEAM = 4QHN4728NU;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = PicoChat;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.idreesinc.PicoChat;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -440,14 +442,15 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_TEAM = 4QHN4728NU;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = PicoChat;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.idreesinc.PicoChat;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -477,7 +480,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		4A80EF9E2D35EF07009D41B0 /* Build configuration list for PBXNativeTarget "PicoChat" */ = {
+		4A80EF9E2D35EF07009D41B0 /* Build configuration list for PBXNativeTarget "PicoChat for iMessage" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				4A80EF9F2D35EF07009D41B0 /* Debug */,

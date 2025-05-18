@@ -31,8 +31,8 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "4A80EF7D2D35EF03009D41B0"
-               BuildableName = "PicoChat.app"
-               BlueprintName = "PicoChat"
+               BuildableName = "PicoChat for iMessage.app"
+               BlueprintName = "PicoChat for iMessage"
                ReferencedContainer = "container:PicoChat.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -72,8 +72,8 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "4A80EF7D2D35EF03009D41B0"
-            BuildableName = "PicoChat.app"
-            BlueprintName = "PicoChat"
+            BuildableName = "PicoChat for iMessage.app"
+            BlueprintName = "PicoChat for iMessage"
             ReferencedContainer = "container:PicoChat.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
